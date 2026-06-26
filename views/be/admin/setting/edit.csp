@@ -6,11 +6,21 @@
 <%c++
 const auto& _d = edit_view_data;
 auto& _s = edit_tmp_stream;
-std::string appName    = v(_d, "appName");
-std::string appTheme   = v(_d, "appTheme");
-std::string copyright  = v(_d, "appCopyright");
 
-// 5 standard themes (Blue/Purple/Green/Orange/Red)
+std::string sName        = v(_d, "sName");
+std::string sDescription = v(_d, "sDescription");
+std::string sEmail       = v(_d, "sEmail");
+std::string sPhone       = v(_d, "sPhone");
+std::string sAddress     = v(_d, "sAddress");
+std::string sCopyright   = v(_d, "sCopyright");
+std::string sTheme       = v(_d, "sTheme");
+std::string sInitial     = v(_d, "sInitial");
+std::string sIcon        = v(_d, "sIcon");
+std::string sLogo        = v(_d, "sLogo");
+std::string sFavicon     = v(_d, "sFavicon");
+std::string sLoginImage  = v(_d, "sLoginImage");
+
+// 5 standard themes matching NodeAdmin exactly
 struct ThemeDef { std::string name, primary, secondary, light, dark; };
 const std::vector<ThemeDef> themes = {
     {"Blue",   "#3B82F6","#60A5FA","#EFF6FF","#1E40AF"},
@@ -21,13 +31,15 @@ const std::vector<ThemeDef> themes = {
 };
 std::string themesHtml;
 for (const auto& t : themes) {
-    bool active = (appTheme == t.name);
+    bool active = (sTheme == t.name);
     themesHtml += "<label class=\"cursor-pointer block\">";
     themesHtml += "<input type=\"radio\" name=\"theme\" value=\"" + h(t.name) + "\" class=\"sr-only theme-radio\"" + (active ? " checked" : "") + ">";
     themesHtml += "<div class=\"theme-swatch rounded-xl overflow-hidden border-2 transition " + std::string(active ? "border-gray-800" : "border-transparent") + "\" style=\"box-shadow:0 4px 10px rgba(0,0,0,.08)\">";
-    themesHtml += "<div class=\"h-8 flex\" style=\"background:" + t.dark + "\">";
+    themesHtml += "<div class=\"h-16 flex\">";
+    themesHtml += "<div class=\"flex-1\" style=\"background:" + t.dark + "\"></div>";
     themesHtml += "<div class=\"flex-1\" style=\"background:" + t.primary + "\"></div>";
-    themesHtml += "<div class=\"w-6\" style=\"background:" + t.secondary + "\"></div>";
+    themesHtml += "<div class=\"flex-1\" style=\"background:" + t.secondary + "\"></div>";
+    themesHtml += "<div class=\"flex-1\" style=\"background:" + t.light + "\"></div>";
     themesHtml += "</div>";
     themesHtml += "<div class=\"bg-white py-2 px-3 flex items-center justify-between\">";
     themesHtml += "<span class=\"text-sm font-semibold text-gray-700\">" + h(t.name) + "</span>";
@@ -61,46 +73,55 @@ for (const auto& t : themes) {
 
     <div class="mb-3">
       <label for="name" class="form-label fw-semibold">App Name</label>
-      <input id="name" type="text" class="form-control" name="name" value="<%c++ hout(_s,appName); %>">
+      <input id="name" type="text" class="form-control" name="name" value="<%c++ hout(_s,sName); %>">
     </div>
 
     <div class="mb-3">
       <label for="description" class="form-label fw-semibold">Description</label>
-      <input id="description" type="text" class="form-control" name="description">
+      <input id="description" type="text" class="form-control" name="description" value="<%c++ hout(_s,sDescription); %>">
     </div>
 
     <div class="mb-3">
       <label for="email" class="form-label fw-semibold">Email</label>
-      <input id="email" type="email" class="form-control" name="email">
+      <input id="email" type="email" class="form-control" name="email" value="<%c++ hout(_s,sEmail); %>">
     </div>
 
     <div class="mb-3">
       <label for="phone" class="form-label fw-semibold">Phone</label>
-      <input id="phone" type="text" class="form-control" name="phone">
+      <input id="phone" type="text" class="form-control" name="phone" value="<%c++ hout(_s,sPhone); %>">
     </div>
 
     <div class="mb-3">
       <label for="address" class="form-label fw-semibold">Address</label>
-      <input id="address" type="text" class="form-control" name="address">
+      <input id="address" type="text" class="form-control" name="address" value="<%c++ hout(_s,sAddress); %>">
     </div>
 
     <div class="mb-3">
       <label for="copyright" class="form-label fw-semibold">Copyright</label>
-      <input id="copyright" type="text" class="form-control" name="copyright" value="<%c++ hout(_s,copyright); %>">
+      <input id="copyright" type="text" class="form-control" name="copyright" value="<%c++ hout(_s,sCopyright); %>">
     </div>
 
     <div class="mb-4">
       <label for="logo" class="form-label fw-semibold">Company Logo</label>
+      <% if (!sLogo.empty()) { %>
+      <div class="mb-2"><img src="<%c++ hout(_s,sLogo); %>" alt="logo" style="max-height:60px;object-fit:contain"></div>
+      <% } %>
       <input id="logo" type="file" class="form-control" name="logo" accept="image/*">
     </div>
 
     <div class="mb-4">
       <label for="favicon" class="form-label fw-semibold">Favicon</label>
+      <% if (!sFavicon.empty()) { %>
+      <div class="mb-2"><img src="<%c++ hout(_s,sFavicon); %>" alt="favicon" style="max-height:32px;object-fit:contain"></div>
+      <% } %>
       <input id="favicon" type="file" class="form-control" name="favicon" accept="image/*">
     </div>
 
     <div class="mb-4">
       <label for="login_image" class="form-label fw-semibold">Login Image</label>
+      <% if (!sLoginImage.empty()) { %>
+      <div class="mb-2"><img src="<%c++ hout(_s,sLoginImage); %>" alt="login image" style="max-height:80px;object-fit:contain"></div>
+      <% } %>
       <input id="login_image" type="file" class="form-control" name="login_image" accept="image/*">
     </div>
 
@@ -111,12 +132,28 @@ for (const auto& t : themes) {
 </form>
 
 <script>
-  document.querySelectorAll('.theme-radio').forEach(function (r) {
-    r.addEventListener('change', function () {
-      document.querySelectorAll('.theme-swatch').forEach(function (s) {
+  var themeColors = {
+    "Blue":   {primary:"#3B82F6",secondary:"#60A5FA",light:"#EFF6FF",dark:"#1E40AF"},
+    "Purple": {primary:"#8B5CF6",secondary:"#A78BFA",light:"#F5F3FF",dark:"#5B21B6"},
+    "Green":  {primary:"#10B981",secondary:"#34D399",light:"#ECFDF5",dark:"#065F46"},
+    "Orange": {primary:"#F59E0B",secondary:"#FCD34D",light:"#FFFBEB",dark:"#92400E"},
+    "Red":    {primary:"#EF4444",secondary:"#F87171",light:"#FEF2F2",dark:"#991B1B"}
+  };
+
+  document.querySelectorAll('.theme-radio').forEach(function(r) {
+    r.addEventListener('change', function() {
+      var t = themeColors[r.value];
+      if (!t) return;
+      var root = document.documentElement;
+      root.style.setProperty('--primary',      t.primary);
+      root.style.setProperty('--secondary',    t.secondary);
+      root.style.setProperty('--theme-light',  t.light);
+      root.style.setProperty('--theme-dark',   t.dark);
+
+      document.querySelectorAll('.theme-swatch').forEach(function(s) {
         s.classList.remove('border-gray-800'); s.classList.add('border-transparent');
       });
-      document.querySelectorAll('.check-icon').forEach(function (c) { c.classList.add('hidden'); });
+      document.querySelectorAll('.check-icon').forEach(function(c) { c.classList.add('hidden'); });
       var box = r.closest('label').querySelector('.theme-swatch');
       box.classList.add('border-gray-800'); box.classList.remove('border-transparent');
       r.closest('label').querySelector('.check-icon').classList.remove('hidden');

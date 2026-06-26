@@ -9,7 +9,22 @@ SettingController::edit(drogon::HttpRequestPtr req) {
 
     drogon::HttpViewData data;
     prepareViewData(data, req, setting.getValueOfTheme());
-    data["setting"] = setting.toJson();
+
+    auto sv = [](const std::string *p) -> std::string { return p ? *p : ""; };
+    data["sName"]        = sv(setting.getName());
+    data["sDescription"] = sv(setting.getDescription());
+    data["sEmail"]       = sv(setting.getEmail());
+    data["sPhone"]       = sv(setting.getPhone());
+    data["sAddress"]     = sv(setting.getAddress());
+    data["sCopyright"]   = sv(setting.getCopyright());
+    data["sTheme"]       = setting.getValueOfTheme();
+    data["sInitial"]     = sv(setting.getInitial());
+    data["sIcon"]        = sv(setting.getIcon());
+    data["sLogo"]        = sv(setting.getLogo());
+    data["sFavicon"]     = sv(setting.getFavicon());
+    data["sLoginImage"]  = sv(setting.getLoginImage());
+    data["sFeTemplate"]  = sv(setting.getFeTemplate());
+
     co_return renderView("views::be::admin::setting::edit", data);
 }
 

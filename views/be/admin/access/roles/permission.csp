@@ -2,6 +2,7 @@
 #include "helpers/HtmlEscape.h"
 #include "helpers/CspHelpers.h"
 #include <vector>
+#include <sstream>
 %>
 <%layout views::be::admin::layouts::main %>
 <%c++
