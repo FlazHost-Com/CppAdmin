@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    env:
+      SESSION_SECRET: ci-session-secret-not-production
+      JWT_SECRET: ci-jwt-secret-not-production
+      APP_ENV: test
+      APP_MODE: full
+      DB_CLIENT: sqlite3
+      DB_NAME: ./ci_test.db
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: apt-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            cmake g++ pkg-config \
+            libdrogon-dev \
+            libssl-dev libcurl4-openssl-dev \
+            libjwt-dev \
+            libhiredis-dev \
+            libsqlite3-dev \
+            default-libmysqlclient-dev \
+            python3 \
+            dbmate || true
+
+      - name: Configure cmake (Full mode)
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DENABLE_WEB_UI=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DMYSQL_INCLUDE_DIRS=/usr/include/mysql \
+            -DMYSQL_LIBRARIES=/usr/lib/x86_64-linux-gnu/libmysqlclient.so
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Run convention checker
+        run: cmake --build build --target check_conventions
+
+      - name: Run tests
+        run: |
+          cd build
+          ctest --output-on-failure -V
+
+      - name: Configure cmake (API-only mode)
+        run: |
+          rm -rf build_api
+          mkdir -p build_api
+          cd build_api
+          cmake .. -DENABLE_WEB_UI=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DMYSQL_INCLUDE_DIRS=/usr/include/mysql \
+            -DMYSQL_LIBRARIES=/usr/lib/x86_64-linux-gnu/libmysqlclient.so
+
+      - name: Build API-only variant
+        run: cmake --build build_api -j$(nproc)

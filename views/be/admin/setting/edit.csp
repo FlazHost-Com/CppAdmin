@@ -1,0 +1,125 @@
+<%inc
+#include "helpers/HtmlEscape.h"
+#include "helpers/CspHelpers.h"
+%>
+<%layout views::be::admin::layouts::main %>
+<%c++
+const auto& _d = edit_view_data;
+auto& _s = edit_tmp_stream;
+std::string appName    = v(_d, "appName");
+std::string appTheme   = v(_d, "appTheme");
+std::string copyright  = v(_d, "appCopyright");
+
+// 5 standard themes (Blue/Purple/Green/Orange/Red)
+struct ThemeDef { std::string name, primary, secondary, light, dark; };
+const std::vector<ThemeDef> themes = {
+    {"Blue",   "#3B82F6","#60A5FA","#EFF6FF","#1E40AF"},
+    {"Purple", "#8B5CF6","#A78BFA","#F5F3FF","#5B21B6"},
+    {"Green",  "#10B981","#34D399","#ECFDF5","#065F46"},
+    {"Orange", "#F59E0B","#FCD34D","#FFFBEB","#92400E"},
+    {"Red",    "#EF4444","#F87171","#FEF2F2","#991B1B"},
+};
+std::string themesHtml;
+for (const auto& t : themes) {
+    bool active = (appTheme == t.name);
+    themesHtml += "<label class=\"cursor-pointer block\">";
+    themesHtml += "<input type=\"radio\" name=\"theme\" value=\"" + h(t.name) + "\" class=\"sr-only theme-radio\"" + (active ? " checked" : "") + ">";
+    themesHtml += "<div class=\"theme-swatch rounded-xl overflow-hidden border-2 transition " + std::string(active ? "border-gray-800" : "border-transparent") + "\" style=\"box-shadow:0 4px 10px rgba(0,0,0,.08)\">";
+    themesHtml += "<div class=\"h-8 flex\" style=\"background:" + t.dark + "\">";
+    themesHtml += "<div class=\"flex-1\" style=\"background:" + t.primary + "\"></div>";
+    themesHtml += "<div class=\"w-6\" style=\"background:" + t.secondary + "\"></div>";
+    themesHtml += "</div>";
+    themesHtml += "<div class=\"bg-white py-2 px-3 flex items-center justify-between\">";
+    themesHtml += "<span class=\"text-sm font-semibold text-gray-700\">" + h(t.name) + "</span>";
+    themesHtml += "<i class=\"fas fa-check-circle check-icon" + std::string(active ? "" : " hidden") + "\" style=\"color:" + t.primary + "\"></i>";
+    themesHtml += "</div></div></label>\n";
+}
+%>
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">Setting Management</h1>
+</div>
+
+<form method="POST" action="/admin/v1/setting?_method=PUT" enctype="multipart/form-data">
+<%c++ csrfInput(_s, _d); %>
+<%c++ flashAlerts(_s, _d); %>
+
+  <!-- Admin Theme Switcher -->
+  <div class="tw-card p-6 mb-6">
+    <div class="flex items-center gap-2 mb-1">
+      <i class="fas fa-palette" style="color:var(--primary)"></i>
+      <h2 class="text-lg font-bold" style="color:var(--primary)">Admin Theme</h2>
+    </div>
+    <p class="text-sm text-gray-500 mb-4">Choose a theme — admin appearance will update after saving.</p>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+<%c++ _s << themesHtml; %>
+    </div>
+  </div>
+
+  <!-- Setting Form -->
+  <div class="tw-card p-6">
+    <h2 class="text-lg font-bold mb-4" style="color:var(--primary)">Setting Form</h2>
+
+    <div class="mb-3">
+      <label for="name" class="form-label fw-semibold">App Name</label>
+      <input id="name" type="text" class="form-control" name="name" value="<%c++ hout(_s,appName); %>">
+    </div>
+
+    <div class="mb-3">
+      <label for="description" class="form-label fw-semibold">Description</label>
+      <input id="description" type="text" class="form-control" name="description">
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label fw-semibold">Email</label>
+      <input id="email" type="email" class="form-control" name="email">
+    </div>
+
+    <div class="mb-3">
+      <label for="phone" class="form-label fw-semibold">Phone</label>
+      <input id="phone" type="text" class="form-control" name="phone">
+    </div>
+
+    <div class="mb-3">
+      <label for="address" class="form-label fw-semibold">Address</label>
+      <input id="address" type="text" class="form-control" name="address">
+    </div>
+
+    <div class="mb-3">
+      <label for="copyright" class="form-label fw-semibold">Copyright</label>
+      <input id="copyright" type="text" class="form-control" name="copyright" value="<%c++ hout(_s,copyright); %>">
+    </div>
+
+    <div class="mb-4">
+      <label for="logo" class="form-label fw-semibold">Company Logo</label>
+      <input id="logo" type="file" class="form-control" name="logo" accept="image/*">
+    </div>
+
+    <div class="mb-4">
+      <label for="favicon" class="form-label fw-semibold">Favicon</label>
+      <input id="favicon" type="file" class="form-control" name="favicon" accept="image/*">
+    </div>
+
+    <div class="mb-4">
+      <label for="login_image" class="form-label fw-semibold">Login Image</label>
+      <input id="login_image" type="file" class="form-control" name="login_image" accept="image/*">
+    </div>
+
+    <button type="submit" class="btn btn-primary-tw px-4 py-2">
+      <i class="fas fa-save me-1"></i> Save Setting
+    </button>
+  </div>
+</form>
+
+<script>
+  document.querySelectorAll('.theme-radio').forEach(function (r) {
+    r.addEventListener('change', function () {
+      document.querySelectorAll('.theme-swatch').forEach(function (s) {
+        s.classList.remove('border-gray-800'); s.classList.add('border-transparent');
+      });
+      document.querySelectorAll('.check-icon').forEach(function (c) { c.classList.add('hidden'); });
+      var box = r.closest('label').querySelector('.theme-swatch');
+      box.classList.add('border-gray-800'); box.classList.remove('border-transparent');
+      r.closest('label').querySelector('.check-icon').classList.remove('hidden');
+    });
+  });
+</script>

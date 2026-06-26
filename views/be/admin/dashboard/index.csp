@@ -1,0 +1,165 @@
+<%inc
+#include "helpers/HtmlEscape.h"
+#include "helpers/CspHelpers.h"
+%>
+<%layout views::be::admin::layouts::main %>
+<%c++
+const auto& _d = index_view_data;
+auto& _s = index_tmp_stream;
+std::string uname = v(_d, "currentUserName");
+std::string statsUsers = v(_d, "statsUsers");
+std::string statsRoles = v(_d, "statsRoles");
+std::string statsPerms = v(_d, "statsPermissions");
+std::string themeName  = v(_d, "themeName");
+if (statsUsers.empty()) statsUsers = "0";
+if (statsRoles.empty()) statsRoles = "0";
+if (statsPerms.empty()) statsPerms = "0";
+if (themeName.empty())  themeName  = "Blue";
+%>
+<div class="flex items-center justify-between mb-2">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
+    <p class="text-sm text-gray-600">Selamat datang kembali, <strong><%c++ hout(_s, uname); %></strong>! Berikut ringkasan hari ini.</p>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-4">
+  <div class="stat-card bg-white rounded-xl shadow-lg p-6 hover-scale" style="border-left:4px solid var(--primary)">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-gray-600 text-sm font-medium">Total Users</p>
+        <p class="text-3xl font-bold text-gray-800 counter" data-target="<%c++ _s << statsUsers; %>">0</p>
+        <p class="text-gray-400 text-sm mt-1">pengguna terdaftar</p>
+      </div>
+      <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background:var(--theme-light)">
+        <i class="fas fa-users text-xl" style="color:var(--primary)"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card bg-white rounded-xl shadow-lg p-6 hover-scale border-l-4 border-green-500">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-gray-600 text-sm font-medium">Roles</p>
+        <p class="text-3xl font-bold text-gray-800 counter" data-target="<%c++ _s << statsRoles; %>">0</p>
+        <p class="text-gray-400 text-sm mt-1">peran akses</p>
+      </div>
+      <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+        <i class="fas fa-user-shield text-green-600 text-xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card bg-white rounded-xl shadow-lg p-6 hover-scale border-l-4 border-yellow-500">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-gray-600 text-sm font-medium">Permissions</p>
+        <p class="text-3xl font-bold text-gray-800 counter" data-target="<%c++ _s << statsPerms; %>">0</p>
+        <p class="text-gray-400 text-sm mt-1">izin terdaftar</p>
+      </div>
+      <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+        <i class="fas fa-key text-yellow-600 text-xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card bg-white rounded-xl shadow-lg p-6 hover-scale border-l-4 border-purple-500">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-gray-600 text-sm font-medium">Theme Aktif</p>
+        <p class="text-2xl font-bold text-gray-800"><%c++ hout(_s, themeName); %></p>
+        <p class="text-gray-400 text-sm mt-1">template</p>
+      </div>
+      <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+        <i class="fas fa-palette text-purple-600 text-xl"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="bg-white rounded-xl shadow-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-800">Sales Overview</h3>
+    </div>
+    <div class="h-64"><canvas id="salesChart"></canvas></div>
+  </div>
+  <div class="bg-white rounded-xl shadow-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-800">Traffic Sources</h3>
+    </div>
+    <div class="h-64"><canvas id="trafficChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Recent Activities & Quick Links -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activities</h3>
+    <div class="space-y-4">
+      <div class="flex items-center gap-3 p-3 rounded-lg" style="background:var(--theme-light)">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--primary)"><i class="fas fa-user text-white text-xs"></i></div>
+        <div class="flex-1"><p class="text-sm font-medium text-gray-800">System started</p><p class="text-xs text-gray-500">CppAdmin running</p></div>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+        <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"><i class="fas fa-check text-white text-xs"></i></div>
+        <div class="flex-1"><p class="text-sm font-medium text-gray-800">Database connected</p><p class="text-xs text-gray-500">SQLite OK</p></div>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+        <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center"><i class="fas fa-shield-alt text-white text-xs"></i></div>
+        <div class="flex-1"><p class="text-sm font-medium text-gray-800">RBAC active</p><p class="text-xs text-gray-500">Route permissions loaded</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Links</h3>
+    <div class="space-y-3">
+      <a href="/admin/v1/access/users" class="flex items-center p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all no-underline group">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center mr-3" style="background:var(--primary)"><i class="fas fa-users text-white text-sm"></i></div>
+        <div class="flex-1"><h4 class="font-semibold text-gray-800 text-sm">Manage Users</h4><p class="text-xs text-gray-500"><%c++ hout(_s, statsUsers); %> users total</p></div>
+        <i class="fas fa-arrow-right text-gray-400 group-hover:text-gray-600"></i>
+      </a>
+      <a href="/admin/v1/access/roles" class="flex items-center p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all no-underline group">
+        <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-user-shield text-white text-sm"></i></div>
+        <div class="flex-1"><h4 class="font-semibold text-gray-800 text-sm">Manage Roles</h4><p class="text-xs text-gray-500"><%c++ hout(_s, statsRoles); %> roles total</p></div>
+        <i class="fas fa-arrow-right text-gray-400 group-hover:text-gray-600"></i>
+      </a>
+      <a href="/admin/v1/setting" class="flex items-center p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all no-underline group">
+        <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-cog text-white text-sm"></i></div>
+        <div class="flex-1"><h4 class="font-semibold text-gray-800 text-sm">App Settings</h4><p class="text-xs text-gray-500">Theme: <%c++ hout(_s, themeName); %></p></div>
+        <i class="fas fa-arrow-right text-gray-400 group-hover:text-gray-600"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  var THEME = {
+    primary: '<%c++ _s << v(_d,"themePrimary"); %>',
+    secondary: '<%c++ _s << v(_d,"themeSecondary"); %>',
+    light: '<%c++ _s << v(_d,"themeLight"); %>',
+    dark: '<%c++ _s << v(_d,"themeDark"); %>'
+  };
+
+  document.querySelectorAll('.counter').forEach(function(el){
+    var target = parseInt(el.getAttribute('data-target')) || 0;
+    if (!target) { el.textContent = '0'; return; }
+    var dur = 1500, step = target/(dur/16), cur = 0;
+    var t = setInterval(function(){ cur += step; if(cur>=target){cur=target; clearInterval(t);} el.textContent = Math.floor(cur).toLocaleString(); }, 16);
+  });
+
+  new Chart(document.getElementById('salesChart').getContext('2d'), {
+    type:'line',
+    data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'Activity', data:[12,19,3,5,2,3,20], borderColor:THEME.primary, backgroundColor:'rgba(0,0,0,0.05)', borderWidth:3, fill:true, tension:0.4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true }, x:{ grid:{ display:false } } }, plugins:{ legend:{ display:false } } }
+  });
+
+  new Chart(document.getElementById('trafficChart').getContext('2d'), {
+    type:'doughnut',
+    data:{ labels:['Users','Roles','Permissions','Other'], datasets:[{ data:[35,25,20,20], backgroundColor:[THEME.primary,'#10B981','#F59E0B','#8B5CF6'], borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ padding:20, usePointStyle:true } } } }
+  });
+</script>
