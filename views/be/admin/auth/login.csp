@@ -6,13 +6,12 @@
 <%c++
 const auto& _d = login_view_data;
 auto& _s = login_tmp_stream;
-std::string logoUrl       = v(_d, "settingLogo");
-std::string loginImageUrl = v(_d, "settingLoginImage");
+std::string logoUrl = v(_d, "settingLogo");
 %>
 <div class="w-full max-w-5xl tw-card overflow-hidden grid md:grid-cols-2">
   <!-- Visual panel -->
   <div class="hidden md:flex sidebar-gradient items-center justify-center p-10">
-    <img class="max-w-full max-h-80 object-contain" src="<%c++ hout(_s, loginImageUrl); %>" alt="">
+    <img class="max-w-full max-h-80 object-contain" src="/modules/setting/login-image.png" alt="">
   </div>
 
   <!-- Form panel -->
@@ -22,6 +21,7 @@ std::string loginImageUrl = v(_d, "settingLoginImage");
     </div>
 
 <%c++ flashAlerts(_s, _d); %>
+<%c++ errorMessagesAlert(_s, _d); %>
 
     <div class="mb-6">
       <h1 class="text-2xl font-bold" style="color:var(--primary)">Hello, Welcome Back!</h1>

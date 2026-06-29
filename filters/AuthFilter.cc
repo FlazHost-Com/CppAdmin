@@ -35,7 +35,8 @@ void AuthFilter::doFilter(const drogon::HttpRequestPtr &req,
     }
 
     // ── Web path: expect session ───────────────────────────────────────────────
-    auto uid = req->session()->getOptional<std::string>("currentUser");
+    auto sess = req->session();
+    auto uid = sess->getOptional<std::string>("currentUser");
     if (uid && !uid->empty()) {
         req->attributes()->insert("currentUser", *uid);
         fccb();

@@ -4,6 +4,8 @@
 #include "../../../services/AuthService.h"
 #include "../../../services/ISettingService.h"
 #include "../../../services/SettingService.h"
+#include "../../../services/IUserService.h"
+#include "../../../services/UserService.h"
 #include <memory>
 
 class AuthWebController : public drogon::HttpController<AuthWebController> {
@@ -23,13 +25,16 @@ public:
     // Default ctor for Drogon auto-instantiation (Drogon 1.8.7 — no registerObject)
     AuthWebController()
         : auth_(std::make_shared<AuthService>())
-        , settingSvc_(std::make_shared<SettingService>()) {}
+        , settingSvc_(std::make_shared<SettingService>())
+        , userSvc_(std::make_shared<UserService>()) {}
 
     // Explicit ctor for test injection
     explicit AuthWebController(std::shared_ptr<IAuthService> auth,
-                               std::shared_ptr<ISettingService> setting = nullptr)
+                               std::shared_ptr<ISettingService> setting = nullptr,
+                               std::shared_ptr<IUserService> userSvc = nullptr)
         : auth_(std::move(auth))
-        , settingSvc_(setting ? std::move(setting) : std::make_shared<SettingService>()) {}
+        , settingSvc_(setting ? std::move(setting) : std::make_shared<SettingService>())
+        , userSvc_(userSvc ? std::move(userSvc) : std::make_shared<UserService>()) {}
 
     drogon::Task<drogon::HttpResponsePtr> showLogin(drogon::HttpRequestPtr req);
     drogon::Task<drogon::HttpResponsePtr> postLogin(drogon::HttpRequestPtr req);
@@ -44,4 +49,5 @@ public:
 private:
     std::shared_ptr<IAuthService>     auth_;
     std::shared_ptr<ISettingService>  settingSvc_;
+    std::shared_ptr<IUserService>     userSvc_;
 };

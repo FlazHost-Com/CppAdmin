@@ -58,6 +58,7 @@ auto& _s = head_tmp_stream;
       .btn-primary:hover, .btn-primary-tw:hover { background: var(--theme-dark); @apply text-white; }
       .btn-success { @apply bg-green-600 text-white hover:bg-green-700; }
       .btn-danger  { @apply bg-red-600 text-white hover:bg-red-700; }
+      .btn-info    { @apply bg-cyan-500 text-white hover:bg-cyan-600; }
       .btn-group { @apply relative inline-flex gap-2; }
 
       .table { @apply w-full text-sm text-gray-700; }

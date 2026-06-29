@@ -14,23 +14,26 @@ VALUES (
     'system'
 );
 
-INSERT OR IGNORE INTO roles (id, name, status, created_by, updated_by)
+INSERT OR IGNORE INTO roles (id, name, guard_name, status, desc, created_by, updated_by)
 VALUES
-    ('role-administrator-000000000001', 'Administrator', 'Active', 'system', 'system'),
-    ('role-user-000000000000000000002', 'User',          'Active', 'system', 'system');
+    ('role-administrator-000000000001', 'Administrator', 'web', 'Active', '', 'system', 'system'),
+    ('role-user-000000000000000000002', 'User',          'web', 'Active', '', 'system', 'system');
 
--- bcrypt hash of "12345678" with rounds=10
--- $2b$10$... (pre-computed; if you change BCRYPT_ROUNDS regenerate this hash)
-INSERT OR IGNORE INTO users (id, code, name, phone, email, password, status, timezone, created_by, updated_by)
+-- bcrypt hash of "12345678" with rounds=10 (generated via crypt_r for C bcrypt compatibility)
+-- $2b$10$abcdefghijklmnopqrstuOxTxdNc3mLA2VsZHWSxlfEcbQuhmajJS
+INSERT OR IGNORE INTO users (id, code, name, phone, email, email_verified_at, password, status, timezone, blocked, blocked_reason, created_by, updated_by)
 VALUES (
     'user-admin-00000000000000000001',
-    'ADM001',
+    '0000000001',
     'Administrator',
-    '000000000000',
+    '12345678910',
     'admin@admin.com',
-    '$2b$10$EixZaYVK1fsbw1ZfbX3OXexnF3ooU3EEbaqTnEkMnXiH05NPdcnFG',
+    CURRENT_TIMESTAMP,
+    '$2b$10$abcdefghijklmnopqrstuOxTxdNc3mLA2VsZHWSxlfEcbQuhmajJS',
     'Active',
-    'UTC',
+    'Asia/Jakarta',
+    0,
+    '',
     'system',
     'system'
 );

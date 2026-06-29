@@ -32,8 +32,9 @@ static std::string actorFromReq(const drogon::HttpRequestPtr &req) {
 
 drogon::Task<HttpResponsePtr> AccessApiController::usersIndex(HttpRequestPtr req) {
     int page     = std::max(1, atoi(req->getParameter("page").c_str()));
-    int pageSize = std::max(1, std::min(100, atoi(req->getParameter("pageSize").c_str())));
-    if (pageSize == 0) pageSize = 10;
+    int pageSize = atoi(req->getParameter("pageSize").c_str());
+    if (pageSize <= 0) pageSize = 10;
+    pageSize = std::min(100, pageSize);
     std::string q = req->getParameter("q");
 
     auto result = co_await userSvc_->list(page, pageSize, q, "", "");
@@ -109,7 +110,7 @@ drogon::Task<HttpResponsePtr> AccessApiController::rolesIndex(HttpRequestPtr req
     int pageSize = 10;
     std::string q = req->getParameter("q");
 
-    auto result = co_await roleSvc_->list(page, pageSize, q, "", "");
+    auto result = co_await roleSvc_->list(page, pageSize, q, "");
 
     Json::Value data(Json::arrayValue);
     for (const auto &r : result.rows)

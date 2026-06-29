@@ -1,6 +1,7 @@
 #include "MediaController.h"
 #include "../../../include/AppError.h"
 #include <drogon/drogon.h>
+#include <drogon/MultiPart.h>
 #include <filesystem>
 #include <fstream>
 #include <chrono>
@@ -57,13 +58,13 @@ drogon::Task<drogon::HttpResponsePtr> MediaController::list(drogon::HttpRequestP
 }
 
 drogon::Task<drogon::HttpResponsePtr> MediaController::upload(drogon::HttpRequestPtr req) {
-    auto uploads = req->getUploadFiles();
-    if (uploads.empty()) {
+    drogon::MultiPartParser mpp;
+    if (mpp.parse(req) != 0 || mpp.getFiles().empty()) {
         co_return jsonErr("No file uploaded.");
     }
-    const auto &f = uploads[0];
+    const auto &f = mpp.getFiles()[0];
 
-    if (f.fileData().size() > MAX_SIZE) {
+    if (f.fileLength() > MAX_SIZE) {
         co_return jsonErr("File too large. Maximum 2MB.");
     }
 
@@ -92,7 +93,7 @@ drogon::Task<drogon::HttpResponsePtr> MediaController::upload(drogon::HttpReques
     if (!ofs) {
         co_return jsonErr("Failed to save file.", drogon::k500InternalServerError);
     }
-    ofs.write(f.fileData().data(), static_cast<std::streamsize>(f.fileData().size()));
+    ofs.write(f.fileData(), static_cast<std::streamsize>(f.fileLength()));
     ofs.close();
 
     Json::Value data;

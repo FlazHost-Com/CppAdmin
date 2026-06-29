@@ -23,14 +23,6 @@ void registerDashboardRoutes() {
         },
         withAll);
 
-    // Root redirect → dashboard (no auth needed)
-    drogon::app().registerHandler("/",
-        [](const drogon::HttpRequestPtr &,
-           std::function<void(const drogon::HttpResponsePtr &)> &&cb) {
-            cb(drogon::HttpResponse::newRedirectionResponse("/admin/v1/dashboard"));
-        },
-        {drogon::Get});
-
     drogon::app().registerHandler("/admin",
         [](const drogon::HttpRequestPtr &,
            std::function<void(const drogon::HttpResponsePtr &)> &&cb) {

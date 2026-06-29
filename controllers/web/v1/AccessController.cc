@@ -10,13 +10,68 @@ using drogon::HttpRequestPtr;
 using drogon::HttpResponsePtr;
 using drogon::HttpResponse;
 
-// Parse multi-value URL-encoded params (e.g. roleIds[]=1&roleIds[]=2).
-// Drogon's unordered_map only keeps the last value for duplicate keys, so we
-// scan the raw body directly, handling both "key[]=" and "key%5B%5D=" forms.
+// Drogon 1.8.7: getParameter() does NOT parse multipart text parts.
+// These helpers parse the raw multipart body directly when needed.
+
+// Extract boundary string from Content-Type header (returns "" if not multipart).
+static std::string multipartBoundary(const std::string &ct) {
+    auto bpos = ct.find("boundary=");
+    if (bpos == std::string::npos) return {};
+    std::string b = "--" + ct.substr(bpos + 9);
+    while (!b.empty() && (b.back() == ' ' || b.back() == '"' || b.back() == '\r' || b.back() == '\n'))
+        b.pop_back();
+    return b;
+}
+
+// Get all values for a field name from a multipart body.
+static std::vector<std::string> parseMultipartAll(const std::string &body,
+                                                    const std::string &boundary,
+                                                    const std::string &fieldName) {
+    std::vector<std::string> result;
+    std::string nameAttr = "name=\"" + fieldName + "\"";
+    size_t pos = 0;
+    while ((pos = body.find(boundary, pos)) != std::string::npos) {
+        pos += boundary.size();
+        auto headerEnd = body.find("\r\n\r\n", pos);
+        if (headerEnd == std::string::npos) break;
+        std::string hdrs = body.substr(pos, headerEnd - pos);
+        if (hdrs.find(nameAttr) == std::string::npos) continue;
+        size_t vStart = headerEnd + 4;
+        size_t vEnd   = body.find("\r\n" + boundary, vStart);
+        if (vEnd == std::string::npos) break;
+        result.push_back(body.substr(vStart, vEnd - vStart));
+    }
+    return result;
+}
+
+// Get a single field value; for multipart falls back to getParameter for URL query params.
+static std::string getParam(const HttpRequestPtr &req,
+                             const std::string &key,
+                             const std::string &body,
+                             const std::string &boundary) {
+    if (!boundary.empty()) {
+        auto vals = parseMultipartAll(body, boundary, key);
+        if (!vals.empty()) return vals[0];
+        // Also check URL query via Drogon for multipart (works for query string)
+        return req->getParameter(key);
+    }
+    return req->getParameter(key);
+}
+
+// Parse multi-value params for both URL-encoded and multipart/form-data.
 static std::vector<std::string> getMultiParam(const HttpRequestPtr &req,
                                                const std::string &rawKey) {
-    std::string base = rawKey.substr(0, rawKey.size() - 2); // strip "[]"
     std::vector<std::string> result;
+    auto ct = req->getHeader("content-type");
+
+    if (ct.find("multipart/form-data") != std::string::npos) {
+        std::string bnd = multipartBoundary(ct);
+        if (bnd.empty()) return result;
+        return parseMultipartAll(std::string(req->getBody()), bnd, rawKey);
+    }
+
+    // URL-encoded: scan raw body for "key[]=" and "key%5B%5D=" forms
+    std::string base = rawKey.substr(0, rawKey.size() - 2); // strip "[]"
     const std::string body(req->getBody());
     for (const std::string &prefix : {rawKey + "=", base + "%5B%5D="}) {
         size_t pos = 0;
@@ -48,6 +103,7 @@ drogon::Task<HttpResponsePtr> AccessController::usersIndex(HttpRequestPtr req) {
     std::string qPhone  = req->getParameter("q_phone");
     std::string qEmail  = req->getParameter("q_email");
     std::string qStatus = req->getParameter("q_status");
+    std::string qRole   = req->getParameter("q_role");
 
     auto result = co_await userSvc_->list(page, pageSize, qName, qEmail, qStatus, qCode, qPhone);
     auto meta   = makePaginateMeta(result.total, page, pageSize);
@@ -61,6 +117,7 @@ drogon::Task<HttpResponsePtr> AccessController::usersIndex(HttpRequestPtr req) {
     data.insert("qPhone",     qPhone);
     data.insert("qEmail",     qEmail);
     data.insert("qStatus",    qStatus);
+    data.insert("qRole",      qRole);
     data.insert("currentPage", std::to_string(page));
     data.insert("totalPage",   std::to_string(meta.totalPages));
     data.insert("pageSize",    std::to_string(pageSize));
@@ -69,8 +126,8 @@ drogon::Task<HttpResponsePtr> AccessController::usersIndex(HttpRequestPtr req) {
     std::string rows;
     int idx = (page - 1) * pageSize + 1;
     for (const auto &u : result.rows) {
-        std::string code  = u.getCode()    ? *u.getCode()    : "";
-        std::string phone = u.getPhone()   ? *u.getPhone()   : "";
+        std::string code  = u.getValueOfCode();
+        std::string phone = u.getValueOfPhone();
         std::string pic   = u.getPicture() ? *u.getPicture() : "";
         // Fetch roles for this user
         std::string roleNames;
@@ -109,7 +166,7 @@ drogon::Task<HttpResponsePtr> AccessController::usersCreate(HttpRequestPtr req) 
         std::string id = r.getValueOfId(), name = r.getValueOfName();
         rolesHtml += "<div class=\"form-check form-check-inline\">"
                      "<input class=\"form-check-input\" type=\"checkbox\""
-                     " name=\"roleIds[]\" value=\"" + id + "\" id=\"role_" + id + "\">"
+                     " name=\"roles[]\" value=\"" + id + "\" id=\"role_" + id + "\">"
                      "<label class=\"form-check-label\" for=\"role_" + id + "\">" + name + "</label>"
                      "</div>";
     }
@@ -119,18 +176,21 @@ drogon::Task<HttpResponsePtr> AccessController::usersCreate(HttpRequestPtr req) 
 }
 
 drogon::Task<HttpResponsePtr> AccessController::usersStore(HttpRequestPtr req) {
+    auto ct   = req->getHeader("content-type");
+    auto body = std::string(req->getBody());
+    auto bnd  = multipartBoundary(ct);
     UserCreateInput input;
-    input.name          = req->getParameter("name");
-    input.code          = req->getParameter("code");
-    input.email         = req->getParameter("email");
-    input.phone         = req->getParameter("phone");
-    input.password      = req->getParameter("password");
-    input.status        = req->getParameter("status");
-    input.timezone      = req->getParameter("timezone");
-    input.blocked       = req->getParameter("blocked") == "1";
-    input.blockedReason = req->getParameter("blocked_reason");
+    input.name          = getParam(req, "name",           body, bnd);
+    input.code          = getParam(req, "code",           body, bnd);
+    input.email         = getParam(req, "email",          body, bnd);
+    input.phone         = getParam(req, "phone",          body, bnd);
+    input.password      = getParam(req, "password",       body, bnd);
+    input.status        = getParam(req, "status",         body, bnd);
+    input.timezone      = getParam(req, "timezone",       body, bnd);
+    input.blocked       = getParam(req, "blocked",        body, bnd) == "1";
+    input.blockedReason = getParam(req, "blocked_reason", body, bnd);
 
-    for (const auto &rid : getMultiParam(req, "roleIds[]")) input.roleIds.push_back(rid);
+    for (const auto &rid : getMultiParam(req, "roles[]")) input.roleIds.push_back(rid);
 
     co_await userSvc_->create(input, actorId(req));
     Flash::setSuccess(req, "Create User Success.");
@@ -157,7 +217,7 @@ drogon::Task<HttpResponsePtr> AccessController::usersShow(HttpRequestPtr req, st
 drogon::Task<HttpResponsePtr> AccessController::usersEdit(HttpRequestPtr req, std::string id) {
     auto user      = co_await userSvc_->findById(id);
     auto userRoles = co_await userSvc_->rolesOf(id);
-    auto allRoles  = co_await roleSvc_->list(1, 200, "", "", "");
+    auto allRoles  = co_await roleSvc_->list(1, 200, "", "");
 
     std::set<std::string> assignedIds;
     for (const auto &r : userRoles) assignedIds.insert(r.getValueOfId());
@@ -184,7 +244,7 @@ drogon::Task<HttpResponsePtr> AccessController::usersEdit(HttpRequestPtr req, st
         bool sel = assignedIds.count(rid) > 0;
         rolesHtml += "<div class=\"form-check form-check-inline\">"
                      "<input class=\"form-check-input\" type=\"checkbox\""
-                     " name=\"roleIds[]\" value=\"" + rid + "\" id=\"role_" + rid + "\""
+                     " name=\"roles[]\" value=\"" + rid + "\" id=\"role_" + rid + "\""
                    + (sel ? " checked" : "") + ">"
                      "<label class=\"form-check-label\" for=\"role_" + rid + "\">" + name + "</label>"
                      "</div>";
@@ -195,15 +255,18 @@ drogon::Task<HttpResponsePtr> AccessController::usersEdit(HttpRequestPtr req, st
 }
 
 drogon::Task<HttpResponsePtr> AccessController::usersUpdate(HttpRequestPtr req, std::string id) {
+    auto ct   = req->getHeader("content-type");
+    auto body = std::string(req->getBody());
+    auto bnd  = multipartBoundary(ct);
     UserUpdateInput input;
-    input.name          = req->getParameter("name");
-    input.phone         = req->getParameter("phone");
-    input.status        = req->getParameter("status");
-    input.timezone      = req->getParameter("timezone");
-    input.blocked       = req->getParameter("blocked") == "1";
-    input.blockedReason = req->getParameter("blocked_reason");
+    input.name          = getParam(req, "name",           body, bnd);
+    input.phone         = getParam(req, "phone",          body, bnd);
+    input.status        = getParam(req, "status",         body, bnd);
+    input.timezone      = getParam(req, "timezone",       body, bnd);
+    input.blocked       = getParam(req, "blocked",        body, bnd) == "1";
+    input.blockedReason = getParam(req, "blocked_reason", body, bnd);
 
-    for (const auto &rid : getMultiParam(req, "roleIds[]")) input.roleIds.push_back(rid);
+    for (const auto &rid : getMultiParam(req, "roles[]")) input.roleIds.push_back(rid);
 
     co_await userSvc_->update(id, input, actorId(req));
     Flash::setSuccess(req, "Update User Success.");
@@ -216,6 +279,13 @@ drogon::Task<HttpResponsePtr> AccessController::usersDestroy(HttpRequestPtr req,
     co_return HttpResponse::newRedirectionResponse("/admin/v1/access/users");
 }
 
+drogon::Task<HttpResponsePtr> AccessController::usersDeleteSelected(HttpRequestPtr req) {
+    auto selected = getMultiParam(req, "selected[]");
+    for (const auto &id : selected) co_await userSvc_->remove(id);
+    Flash::setSuccess(req, "Delete Users Success.");
+    co_return HttpResponse::newRedirectionResponse("/admin/v1/access/users");
+}
+
 // ── Roles ─────────────────────────────────────────────────────────────────────
 
 drogon::Task<HttpResponsePtr> AccessController::rolesIndex(HttpRequestPtr req) {
@@ -223,6 +293,7 @@ drogon::Task<HttpResponsePtr> AccessController::rolesIndex(HttpRequestPtr req) {
     int pageSize = std::max(10, atoi(req->getParameter("q_page_size").c_str()));
     std::string qName   = req->getParameter("q_name");
     std::string qStatus = req->getParameter("q_status");
+    std::string qDesc   = req->getParameter("q_desc");
 
     auto result = co_await roleSvc_->list(page, pageSize, qName, qStatus);
     auto meta   = makePaginateMeta(result.total, page, pageSize);
@@ -233,6 +304,7 @@ drogon::Task<HttpResponsePtr> AccessController::rolesIndex(HttpRequestPtr req) {
     data.insert("activeMenu", std::string("access.roles"));
     data.insert("qName",      qName);
     data.insert("qStatus",    qStatus);
+    data.insert("qDesc",      qDesc);
     data.insert("currentPage", std::to_string(page));
     data.insert("totalPage",   std::to_string(meta.totalPages));
     data.insert("pageSize",    std::to_string(pageSize));
@@ -262,10 +334,11 @@ drogon::Task<HttpResponsePtr> AccessController::rolesCreate(HttpRequestPtr req) 
 }
 
 drogon::Task<HttpResponsePtr> AccessController::rolesStore(HttpRequestPtr req) {
+    auto ct = req->getHeader("content-type"); auto body = std::string(req->getBody()); auto bnd = multipartBoundary(ct);
     RoleCreateInput input;
-    input.name   = req->getParameter("name");
-    input.status = req->getParameter("status");
-    input.desc   = req->getParameter("desc");
+    input.name   = getParam(req, "name",   body, bnd);
+    input.status = getParam(req, "status", body, bnd);
+    input.desc   = getParam(req, "desc",   body, bnd);
 
     for (const auto &pid : getMultiParam(req, "permissionIds[]")) input.permissionIds.push_back(pid);
 
@@ -305,10 +378,11 @@ drogon::Task<HttpResponsePtr> AccessController::rolesEdit(HttpRequestPtr req, st
 }
 
 drogon::Task<HttpResponsePtr> AccessController::rolesUpdate(HttpRequestPtr req, std::string id) {
+    auto ct = req->getHeader("content-type"); auto body = std::string(req->getBody()); auto bnd = multipartBoundary(ct);
     RoleUpdateInput input;
-    input.name   = req->getParameter("name");
-    input.status = req->getParameter("status");
-    input.desc   = req->getParameter("desc");
+    input.name   = getParam(req, "name",   body, bnd);
+    input.status = getParam(req, "status", body, bnd);
+    input.desc   = getParam(req, "desc",   body, bnd);
 
     for (const auto &pid : getMultiParam(req, "permissionIds[]")) input.permissionIds.push_back(pid);
 
@@ -320,6 +394,13 @@ drogon::Task<HttpResponsePtr> AccessController::rolesUpdate(HttpRequestPtr req, 
 drogon::Task<HttpResponsePtr> AccessController::rolesDestroy(HttpRequestPtr req, std::string id) {
     co_await roleSvc_->remove(id);
     Flash::setSuccess(req, "Delete Role Success.");
+    co_return HttpResponse::newRedirectionResponse("/admin/v1/access/roles");
+}
+
+drogon::Task<HttpResponsePtr> AccessController::rolesDeleteSelected(HttpRequestPtr req) {
+    auto selected = getMultiParam(req, "selected[]");
+    for (const auto &id : selected) co_await roleSvc_->remove(id);
+    Flash::setSuccess(req, "Delete Roles Success.");
     co_return HttpResponse::newRedirectionResponse("/admin/v1/access/roles");
 }
 
@@ -394,12 +475,13 @@ drogon::Task<HttpResponsePtr> AccessController::permissionsCreate(HttpRequestPtr
 }
 
 drogon::Task<HttpResponsePtr> AccessController::permissionsStore(HttpRequestPtr req) {
+    auto ct = req->getHeader("content-type"); auto body = std::string(req->getBody()); auto bnd = multipartBoundary(ct);
     PermissionCreateInput input;
-    input.name      = req->getParameter("name");
-    input.guardName = req->getParameter("guard_name");
-    input.method    = req->getParameter("method");
-    input.status    = req->getParameter("status");
-    input.desc      = req->getParameter("desc");
+    input.name      = getParam(req, "name",       body, bnd);
+    input.guardName = getParam(req, "guard_name", body, bnd);
+    input.method    = getParam(req, "method",     body, bnd);
+    input.status    = getParam(req, "status",     body, bnd);
+    input.desc      = getParam(req, "desc",       body, bnd);
 
     co_await permSvc_->create(input, actorId(req));
     Flash::setSuccess(req, "Create Permission Success.");
@@ -441,12 +523,13 @@ drogon::Task<HttpResponsePtr> AccessController::permissionsEdit(HttpRequestPtr r
 }
 
 drogon::Task<HttpResponsePtr> AccessController::permissionsUpdate(HttpRequestPtr req, std::string id) {
+    auto ct = req->getHeader("content-type"); auto body = std::string(req->getBody()); auto bnd = multipartBoundary(ct);
     PermissionUpdateInput input;
-    input.name      = req->getParameter("name");
-    input.guardName = req->getParameter("guard_name");
-    input.method    = req->getParameter("method");
-    input.status    = req->getParameter("status");
-    input.desc      = req->getParameter("desc");
+    input.name      = getParam(req, "name",       body, bnd);
+    input.guardName = getParam(req, "guard_name", body, bnd);
+    input.method    = getParam(req, "method",     body, bnd);
+    input.status    = getParam(req, "status",     body, bnd);
+    input.desc      = getParam(req, "desc",       body, bnd);
 
     co_await permSvc_->update(id, input, actorId(req));
     Flash::setSuccess(req, "Update Permission Success.");
@@ -456,6 +539,13 @@ drogon::Task<HttpResponsePtr> AccessController::permissionsUpdate(HttpRequestPtr
 drogon::Task<HttpResponsePtr> AccessController::permissionsDestroy(HttpRequestPtr req, std::string id) {
     co_await permSvc_->remove(id);
     Flash::setSuccess(req, "Delete Permission Success.");
+    co_return HttpResponse::newRedirectionResponse("/admin/v1/access/permissions");
+}
+
+drogon::Task<HttpResponsePtr> AccessController::permissionsDeleteSelected(HttpRequestPtr req) {
+    auto selected = getMultiParam(req, "selected[]");
+    for (const auto &id : selected) co_await permSvc_->remove(id);
+    Flash::setSuccess(req, "Delete Permissions Success.");
     co_return HttpResponse::newRedirectionResponse("/admin/v1/access/permissions");
 }
 

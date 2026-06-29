@@ -23,6 +23,7 @@ public:
     drogon::Task<drogon::HttpResponsePtr> usersEdit(drogon::HttpRequestPtr req, std::string id);
     drogon::Task<drogon::HttpResponsePtr> usersUpdate(drogon::HttpRequestPtr req, std::string id);
     drogon::Task<drogon::HttpResponsePtr> usersDestroy(drogon::HttpRequestPtr req, std::string id);
+    drogon::Task<drogon::HttpResponsePtr> usersDeleteSelected(drogon::HttpRequestPtr req);
 
     // Roles
     drogon::Task<drogon::HttpResponsePtr> rolesIndex(drogon::HttpRequestPtr req);
@@ -32,6 +33,7 @@ public:
     drogon::Task<drogon::HttpResponsePtr> rolesEdit(drogon::HttpRequestPtr req, std::string id);
     drogon::Task<drogon::HttpResponsePtr> rolesUpdate(drogon::HttpRequestPtr req, std::string id);
     drogon::Task<drogon::HttpResponsePtr> rolesDestroy(drogon::HttpRequestPtr req, std::string id);
+    drogon::Task<drogon::HttpResponsePtr> rolesDeleteSelected(drogon::HttpRequestPtr req);
 
     // Role → Permission management
     drogon::Task<drogon::HttpResponsePtr> rolesPermission(drogon::HttpRequestPtr req, std::string id);
@@ -48,6 +50,7 @@ public:
     drogon::Task<drogon::HttpResponsePtr> permissionsEdit(drogon::HttpRequestPtr req, std::string id);
     drogon::Task<drogon::HttpResponsePtr> permissionsUpdate(drogon::HttpRequestPtr req, std::string id);
     drogon::Task<drogon::HttpResponsePtr> permissionsDestroy(drogon::HttpRequestPtr req, std::string id);
+    drogon::Task<drogon::HttpResponsePtr> permissionsDeleteSelected(drogon::HttpRequestPtr req);
 
 private:
     std::shared_ptr<IUserService>       userSvc_;

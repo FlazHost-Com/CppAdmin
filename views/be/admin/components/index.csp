@@ -10,11 +10,11 @@ auto& _s = index_tmp_stream;
 <div class="flex items-center justify-between mb-6">
   <div>
     <h1 class="text-2xl font-bold text-gray-800">UI Components</h1>
-    <p class="text-sm text-gray-600">Acuan elemen siap-pakai.</p>
+    <p class="text-sm text-gray-600">Acuan elemen siap-pakai. Lihat <code>docs/UI_COMPONENTS.md</code> untuk snippet copy-paste.</p>
   </div>
 </div>
 
-<!-- 1. Stat Cards -->
+<!-- ============ STAT CARDS + COUNTER ============ -->
 <section class="mb-10">
   <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">1. Stat Card + Counter</h2>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -45,7 +45,7 @@ auto& _s = index_tmp_stream;
   </div>
 </section>
 
-<!-- 2. Charts -->
+<!-- ============ CHARTS (themeable) ============ -->
 <section class="mb-10">
   <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">2. Chart (Chart.js, warna ikut tema)</h2>
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -54,9 +54,9 @@ auto& _s = index_tmp_stream;
   </div>
 </section>
 
-<!-- 3. Badges / Status -->
+<!-- ============ BADGES / STATUS ============ -->
 <section class="mb-10">
-  <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">3. Badge &amp; Status</h2>
+  <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">3. Badge & Status</h2>
   <div class="bg-white rounded-xl shadow-lg p-6 flex flex-wrap items-center gap-3">
     <span class="badge text-bg-primary">Primary</span>
     <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">Delivered</span>
@@ -69,19 +69,19 @@ auto& _s = index_tmp_stream;
   </div>
 </section>
 
-<!-- 4. Alerts -->
+<!-- ============ ALERT ============ -->
 <section class="mb-10">
   <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">4. Alert (flash)</h2>
   <div class="alert alert-success shadow-sm">Contoh pesan sukses.</div>
   <div class="alert alert-danger shadow-sm">Contoh pesan error.</div>
   <div class="alert alert-info shadow-sm">Contoh pesan info.</div>
   <div class="alert alert-warning shadow-sm">Contoh pesan peringatan.</div>
-  <div class="alert alert-primary shadow-sm">Contoh alert beraksen tema.</div>
+  <div class="alert alert-primary shadow-sm">Contoh alert beraksen tema (ikut template switcher).</div>
 </section>
 
-<!-- 5. Button & Dropdown -->
+<!-- ============ BUTTON & DROPDOWN ============ -->
 <section class="mb-10">
-  <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">5. Button &amp; Dropdown Action</h2>
+  <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">5. Button & Dropdown Action</h2>
   <div class="bg-white rounded-xl shadow-lg p-6 flex flex-wrap items-center gap-3">
     <button class="btn btn-primary-tw px-4 py-2"><i class="fas fa-save me-1"></i> Primary</button>
     <button class="btn btn-success btn-sm">Success</button>
@@ -97,25 +97,36 @@ auto& _s = index_tmp_stream;
   </div>
 </section>
 
-<!-- 6. Popup: Modal, Toast, Confirm -->
+<!-- ============ POPUP: Modal, Toast, Confirm ============ -->
 <section class="mb-10">
   <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">6. Popup (Modal / Toast / Confirm)</h2>
   <div class="bg-white rounded-xl shadow-lg p-6 flex flex-wrap items-center gap-3">
-    <button class="btn btn-primary-tw px-4 py-2" onclick="Modal.open({ title:'Contoh Modal', body:'&lt;p&gt;Ini isi modal.&lt;/p&gt;' })">Buka Modal</button>
+    <button class="btn btn-primary-tw px-4 py-2" onclick="Modal.open({ title:'Contoh Modal', body:'<p>Ini isi modal. Bisa teks/HTML/form.</p>' })">Buka Modal</button>
     <button class="btn btn-success btn-sm" onclick="Toast('Tersimpan!', 'success')">Toast Success</button>
     <button class="btn btn-danger btn-sm" onclick="Toast('Gagal menyimpan', 'error')">Toast Error</button>
     <button class="btn btn-sm btn-primary" onclick="Toast('Sekadar info', 'info')">Toast Info</button>
     <button class="btn btn-danger px-4 py-2 text-white" onclick="confirmDialog('Yakin hapus data ini?').then(function(ok){ Toast(ok?'Dikonfirmasi':'Dibatalkan', ok?'success':'info') })">Confirm Dialog</button>
   </div>
+  <p class="text-sm text-gray-500 mt-2">Tombol/link hapus juga bisa pakai atribut <code>data-confirm="pesan"</code> → otomatis muncul confirm bertema sebelum submit.</p>
 </section>
 
-<!-- 7. Form -->
+<!-- ============ FORM ============ -->
 <section class="mb-10">
   <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">7. Form (CRUD)</h2>
   <div class="tw-card p-6">
-    <div class="mb-3"><label class="form-label fw-semibold">Text Input</label><input type="text" class="form-control" placeholder="contoh"></div>
-    <div class="mb-3"><label class="form-label fw-semibold">Input Invalid</label><input type="text" class="form-control is-invalid" value="salah"><div class="invalid-feedback">Contoh pesan validasi.</div></div>
-    <div class="mb-3"><label class="form-label fw-semibold">Select</label><select class="form-control"><option>Active</option><option>Inactive</option></select></div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Text Input</label>
+      <input type="text" class="form-control" placeholder="contoh">
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Input Invalid</label>
+      <input type="text" class="form-control is-invalid" value="salah">
+      <div class="invalid-feedback">Contoh pesan validasi.</div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Select</label>
+      <select class="form-control"><option>Active</option><option>Inactive</option></select>
+    </div>
     <div class="mb-3">
       <label class="form-label fw-semibold d-block">Checkbox</label>
       <div class="d-flex flex-wrap gap-3 p-2 rounded border">
@@ -123,21 +134,43 @@ auto& _s = index_tmp_stream;
         <label class="d-flex align-items-center gap-2"><input type="checkbox" class="w-4 h-4"><span>Opsi kosong</span></label>
       </div>
     </div>
-    <div class="mb-3"><label class="form-label fw-semibold">Textarea</label><textarea class="form-control" placeholder="Teks polos"></textarea></div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Textarea (biasa)</label>
+      <textarea class="form-control" placeholder="Teks polos tanpa format"></textarea>
+    </div>
     <div class="mb-3">
       <label class="form-label fw-semibold">File Upload (gambar)</label>
       <div class="d-flex align-items-center gap-3">
-        <img id="filePreview" src="" width="90" height="90" class="rounded border p-1" style="object-fit:contain;background:#f8fafc">
+        <img id="filePreview" src="/be/default/img/placeholder.png" width="90" height="90"
+             class="rounded border p-1" style="object-fit:contain;background:#f8fafc"
+             onerror="this.style.visibility='hidden'">
         <input id="fileUpload" type="file" name="file" accept="image/*" class="form-control">
       </div>
+      <small class="text-muted">Form upload pakai <code>enctype="multipart/form-data"</code>. Gambar otomatis dikonversi ke WebP saat disimpan ke OSS.</small>
     </div>
     <button class="btn btn-primary-tw px-4 py-2"><i class="fas fa-save me-1"></i> Save</button>
   </div>
 </section>
 
-<!-- 8. Data Table + Pagination -->
+<!-- ============ RICH TEXT EDITOR ============ -->
 <section class="mb-10">
-  <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">8. Data Table + Pagination</h2>
+  <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">8. Rich Text Editor (Trumbowyg + File Manager)</h2>
+  <div class="tw-card p-6">
+    <p class="text-sm text-gray-500 mb-4">
+      Textarea dengan toolbar format + tombol <em>File Manager</em> untuk unggah/sisip gambar
+      langsung ke OSS. Tambahkan class <code>trumbowyg-editor</code> pada textarea biasa
+      (lihat <strong>nomor 7</strong>) untuk mengaktifkannya.
+    </p>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Rich Text Editor + File Manager</label>
+      <textarea class="trumbowyg-editor form-control"><p>Tulis konten <strong>kaya format</strong> di sini. Klik ikon gambar pada toolbar untuk membuka <em>File Manager</em>.</p></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DATA TABLE + PAGINATION ============ -->
+<section class="mb-10">
+  <h2 class="text-lg font-bold mb-3" style="color:var(--primary)">9. Data Table + Pagination</h2>
   <div class="tw-card p-0 overflow-hidden">
     <div class="px-6 py-4 border-b flex items-center justify-between">
       <h3 class="text-lg font-bold" style="color:var(--primary)">List</h3>
@@ -146,7 +179,7 @@ auto& _s = index_tmp_stream;
     <div class="p-4" style="overflow-x:auto">
       <table class="table table-bordered table-hover align-middle">
         <thead>
-          <tr><th>No</th><th>Name</th><th>Status</th><th>Action</th></tr>
+          <tr><th width="5%">No</th><th>Name</th><th width="15%">Status</th><th width="10%">Action</th></tr>
         </thead>
         <tbody>
           <tr>
@@ -178,16 +211,16 @@ auto& _s = index_tmp_stream;
 </section>
 
 <script>
-  var THEME = {
-    primary: '<%c++ _s << v(_d,"themePrimary"); %>',
-    secondary: '<%c++ _s << v(_d,"themeSecondary"); %>',
-  };
+  // Aksen tema dari server (template switcher)
+  var cs=getComputedStyle(document.documentElement); var THEME={primary:cs.getPropertyValue('--primary').trim()||'#3B82F6',secondary:cs.getPropertyValue('--secondary').trim()||'#60A5FA',light:cs.getPropertyValue('--theme-light').trim()||'#EFF6FF',dark:cs.getPropertyValue('--theme-dark').trim()||'#1E3A8A'};
 
+  // Counter animation
   document.querySelectorAll('.counter').forEach(function(el){
-    var target = parseInt(el.getAttribute('data-target')) || 0, dur = 1200, step = target/(dur/16), cur = 0;
+    var target = parseInt(el.getAttribute('data-target')), dur = 1200, step = target/(dur/16), cur = 0;
     var t = setInterval(function(){ cur += step; if(cur>=target){cur=target; clearInterval(t);} el.textContent = Math.floor(cur).toLocaleString(); }, 16);
   });
 
+  // File upload: preview gambar sebelum submit
   (function(){
     var input = document.getElementById('fileUpload'), prev = document.getElementById('filePreview');
     if (!input || !prev) return;
@@ -197,11 +230,13 @@ auto& _s = index_tmp_stream;
     });
   })();
 
+  // Chart line (warna ikut tema)
   new Chart(document.getElementById('demoLine').getContext('2d'), {
     type:'line',
     data:{ labels:['Sen','Sel','Rab','Kam','Jum','Sab','Min'], datasets:[{ label:'Demo', data:[12,19,8,15,9,17,22], borderColor:THEME.primary, backgroundColor:'rgba(0,0,0,0.05)', borderWidth:3, fill:true, tension:0.4 }] },
     options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } } }
   });
+  // Chart doughnut (warna pertama ikut tema)
   new Chart(document.getElementById('demoDoughnut').getContext('2d'), {
     type:'doughnut',
     data:{ labels:['A','B','C','D'], datasets:[{ data:[40,25,20,15], backgroundColor:[THEME.primary,'#10B981','#F59E0B','#EF4444'], borderWidth:0 }] },

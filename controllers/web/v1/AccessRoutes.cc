@@ -83,14 +83,35 @@ void registerAccessRoutes() {
         },
         webConstraints(drogon::Delete));
 
+    // POST companion: dispatch PUT→Update, DELETE/other→Destroy (Drogon routes before MethodOverrideFilter)
+    drogon::app().registerHandler("/admin/v1/access/users/{id}",
+        [ctrl](drogon::HttpRequestPtr req, std::string id)
+            -> drogon::Task<drogon::HttpResponsePtr> {
+            auto m = req->getParameter("_method");
+            std::transform(m.begin(), m.end(), m.begin(), ::toupper);
+            if (m == "PUT" || m == "PATCH")
+                co_return co_await ctrl->usersUpdate(req, id);
+            co_return co_await ctrl->usersDestroy(req, id);
+        },
+        webConstraints(drogon::Post));
+
+    drogon::app().registerHandler("/admin/v1/access/users/delete_selected",
+        [ctrl](drogon::HttpRequestPtr req,
+               std::function<void(const drogon::HttpResponsePtr &)> cb)
+            -> drogon::Task<void> { cb(co_await ctrl->usersDeleteSelected(req)); },
+        webConstraints(drogon::Post));
+
     // ── Roles ──────────────────────────────────────────────────────────────────
-    ROUTE_REG("access.roles.index",   "GET",    "/admin/v1/access/roles");
-    ROUTE_REG("access.roles.create",  "GET",    "/admin/v1/access/roles/create");
-    ROUTE_REG("access.roles.store",   "POST",   "/admin/v1/access/roles");
-    ROUTE_REG("access.roles.show",    "GET",    "/admin/v1/access/roles/{id}");
-    ROUTE_REG("access.roles.edit",    "GET",    "/admin/v1/access/roles/{id}/edit");
-    ROUTE_REG("access.roles.update",  "PUT",    "/admin/v1/access/roles/{id}");
-    ROUTE_REG("access.roles.delete",  "DELETE", "/admin/v1/access/roles/{id}");
+    ROUTE_REG("access.roles.index",          "GET",    "/admin/v1/access/roles");
+    ROUTE_REG("access.roles.create",         "GET",    "/admin/v1/access/roles/create");
+    ROUTE_REG("access.roles.store",          "POST",   "/admin/v1/access/roles/store");
+    ROUTE_REG("access.roles.delete_selected","POST",   "/admin/v1/access/roles/delete_selected");
+    ROUTE_REG("access.roles.show",           "GET",    "/admin/v1/access/roles/{id}");
+    ROUTE_REG("access.roles.edit",           "GET",    "/admin/v1/access/roles/{id}/edit");
+    ROUTE_REG("access.roles.update",         "PUT",    "/admin/v1/access/roles/{id}");
+    ROUTE_REG("access.roles.update_path",    "POST",   "/admin/v1/access/roles/{id}/update");
+    ROUTE_REG("access.roles.delete_path",    "POST",   "/admin/v1/access/roles/{id}/delete");
+    ROUTE_REG("access.roles.delete",         "DELETE", "/admin/v1/access/roles/{id}");
 
     drogon::app().registerHandler("/admin/v1/access/roles",
         [ctrl](drogon::HttpRequestPtr req,
@@ -103,12 +124,6 @@ void registerAccessRoutes() {
                std::function<void(const drogon::HttpResponsePtr &)> cb)
             -> drogon::Task<void> { cb(co_await ctrl->rolesCreate(req)); },
         webConstraints(drogon::Get));
-
-    drogon::app().registerHandler("/admin/v1/access/roles",
-        [ctrl](drogon::HttpRequestPtr req,
-               std::function<void(const drogon::HttpResponsePtr &)> cb)
-            -> drogon::Task<void> { cb(co_await ctrl->rolesStore(req)); },
-        webConstraints(drogon::Post));
 
     drogon::app().registerHandler("/admin/v1/access/roles/{id}",
         [ctrl](drogon::HttpRequestPtr req, std::string id)
@@ -138,12 +153,53 @@ void registerAccessRoutes() {
         },
         webConstraints(drogon::Delete));
 
+    // Exact-path POST handlers registered BEFORE the {id} companion to prevent
+    // Drogon's first-match-wins from swallowing them as id='store'/'delete_selected'.
+    drogon::app().registerHandler("/admin/v1/access/roles/store",
+        [ctrl](drogon::HttpRequestPtr req,
+               std::function<void(const drogon::HttpResponsePtr &)> cb)
+            -> drogon::Task<void> { cb(co_await ctrl->rolesStore(req)); },
+        webConstraints(drogon::Post));
+
+    drogon::app().registerHandler("/admin/v1/access/roles/delete_selected",
+        [ctrl](drogon::HttpRequestPtr req,
+               std::function<void(const drogon::HttpResponsePtr &)> cb)
+            -> drogon::Task<void> { cb(co_await ctrl->rolesDeleteSelected(req)); },
+        webConstraints(drogon::Post));
+
+    // Path-segment update/delete routes (NodeAdmin spec: /{id}/update and /{id}/delete)
+    drogon::app().registerHandler("/admin/v1/access/roles/{id}/update",
+        [ctrl](drogon::HttpRequestPtr req, std::string id)
+            -> drogon::Task<drogon::HttpResponsePtr> {
+            co_return co_await ctrl->rolesUpdate(req, id);
+        },
+        webConstraints(drogon::Post));
+
+    drogon::app().registerHandler("/admin/v1/access/roles/{id}/delete",
+        [ctrl](drogon::HttpRequestPtr req, std::string id)
+            -> drogon::Task<drogon::HttpResponsePtr> {
+            co_return co_await ctrl->rolesDestroy(req, id);
+        },
+        webConstraints(drogon::Post));
+
+    // POST companion for legacy /{id}?_method=PUT|DELETE (kept for backward compat)
+    drogon::app().registerHandler("/admin/v1/access/roles/{id}",
+        [ctrl](drogon::HttpRequestPtr req, std::string id)
+            -> drogon::Task<drogon::HttpResponsePtr> {
+            auto m = req->getParameter("_method");
+            std::transform(m.begin(), m.end(), m.begin(), ::toupper);
+            if (m == "PUT" || m == "PATCH")
+                co_return co_await ctrl->rolesUpdate(req, id);
+            co_return co_await ctrl->rolesDestroy(req, id);
+        },
+        webConstraints(drogon::Post));
+
     // ── Role → Permission management ──────────────────────────────────────────
     ROUTE_REG("access.roles.permission",                "GET",  "/admin/v1/access/roles/{id}/permission");
-    ROUTE_REG("access.roles.permission.assign",         "GET",  "/admin/v1/access/roles/{id}/permission/assign/{permId}");
-    ROUTE_REG("access.roles.permission.unassign",       "GET",  "/admin/v1/access/roles/{id}/permission/unassign/{permId}");
-    ROUTE_REG("access.roles.permission.assign_selected",   "POST", "/admin/v1/access/roles/{id}/permission/assign-selected");
-    ROUTE_REG("access.roles.permission.unassign_selected", "POST", "/admin/v1/access/roles/{id}/permission/unassign-selected");
+    ROUTE_REG("access.roles.permission.assign",         "GET",  "/admin/v1/access/roles/{id}/permission/{permId}/assign");
+    ROUTE_REG("access.roles.permission.unassign",       "GET",  "/admin/v1/access/roles/{id}/permission/{permId}/unassign");
+    ROUTE_REG("access.roles.permission.assign_selected",   "POST", "/admin/v1/access/roles/{id}/permission/assign_selected");
+    ROUTE_REG("access.roles.permission.unassign_selected", "POST", "/admin/v1/access/roles/{id}/permission/unassign_selected");
 
     drogon::app().registerHandler("/admin/v1/access/roles/{id}/permission",
         [ctrl](drogon::HttpRequestPtr req, std::string id)
@@ -152,28 +208,28 @@ void registerAccessRoutes() {
         },
         webConstraints(drogon::Get));
 
-    drogon::app().registerHandler("/admin/v1/access/roles/{id}/permission/assign/{permId}",
+    drogon::app().registerHandler("/admin/v1/access/roles/{id}/permission/{permId}/assign",
         [ctrl](drogon::HttpRequestPtr req, std::string id, std::string permId)
             -> drogon::Task<drogon::HttpResponsePtr> {
             co_return co_await ctrl->rolesPermissionAssign(req, id, permId);
         },
         webConstraints(drogon::Get));
 
-    drogon::app().registerHandler("/admin/v1/access/roles/{id}/permission/unassign/{permId}",
+    drogon::app().registerHandler("/admin/v1/access/roles/{id}/permission/{permId}/unassign",
         [ctrl](drogon::HttpRequestPtr req, std::string id, std::string permId)
             -> drogon::Task<drogon::HttpResponsePtr> {
             co_return co_await ctrl->rolesPermissionUnassign(req, id, permId);
         },
         webConstraints(drogon::Get));
 
-    drogon::app().registerHandler("/admin/v1/access/roles/{id}/permission/assign-selected",
+    drogon::app().registerHandler("/admin/v1/access/roles/{id}/permission/assign_selected",
         [ctrl](drogon::HttpRequestPtr req, std::string id)
             -> drogon::Task<drogon::HttpResponsePtr> {
             co_return co_await ctrl->rolesPermissionAssignSelected(req, id);
         },
         webConstraints(drogon::Post));
 
-    drogon::app().registerHandler("/admin/v1/access/roles/{id}/permission/unassign-selected",
+    drogon::app().registerHandler("/admin/v1/access/roles/{id}/permission/unassign_selected",
         [ctrl](drogon::HttpRequestPtr req, std::string id)
             -> drogon::Task<drogon::HttpResponsePtr> {
             co_return co_await ctrl->rolesPermissionUnassignSelected(req, id);
@@ -234,4 +290,22 @@ void registerAccessRoutes() {
             co_return co_await ctrl->permissionsDestroy(req, id);
         },
         webConstraints(drogon::Delete));
+
+    // POST companion: dispatch PUT→Update, DELETE/other→Destroy (Drogon routes before MethodOverrideFilter)
+    drogon::app().registerHandler("/admin/v1/access/permissions/{id}",
+        [ctrl](drogon::HttpRequestPtr req, std::string id)
+            -> drogon::Task<drogon::HttpResponsePtr> {
+            auto m = req->getParameter("_method");
+            std::transform(m.begin(), m.end(), m.begin(), ::toupper);
+            if (m == "PUT" || m == "PATCH")
+                co_return co_await ctrl->permissionsUpdate(req, id);
+            co_return co_await ctrl->permissionsDestroy(req, id);
+        },
+        webConstraints(drogon::Post));
+
+    drogon::app().registerHandler("/admin/v1/access/permissions/delete_selected",
+        [ctrl](drogon::HttpRequestPtr req,
+               std::function<void(const drogon::HttpResponsePtr &)> cb)
+            -> drogon::Task<void> { cb(co_await ctrl->permissionsDeleteSelected(req)); },
+        webConstraints(drogon::Post));
 }

@@ -18,7 +18,7 @@ std::string rstatus= v(_d, "roleStatus");
 <div class="tw-card p-6">
   <h2 class="text-lg font-bold mb-4" style="color:var(--primary)">Role Form</h2>
 <%c++ flashAlerts(_s, _d); %>
-  <form method="POST" action="/admin/v1/access/roles/<%c++ hout(_s,rid); %>?_method=PUT">
+  <form method="POST" action="/admin/v1/access/roles/<%c++ hout(_s,rid); %>/update?_method=PUT">
 <%c++ csrfInput(_s, _d); %>
     <div class="mb-3">
       <label for="name" class="form-label fw-semibold">Name</label>

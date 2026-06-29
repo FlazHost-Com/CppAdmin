@@ -17,6 +17,7 @@ int pageSize  = pageSizeStr.empty()  ? 10 : std::stoi(pageSizeStr);
 
 std::string qName   = v(_d, "qName");
 std::string qStatus = v(_d, "qStatus");
+std::string qDesc   = v(_d, "qDesc");
 %>
 <div class="flex items-center justify-between mb-6">
   <h1 class="text-2xl font-bold text-gray-800">Role Management</h1>
@@ -26,11 +27,11 @@ std::string qStatus = v(_d, "qStatus");
   <div class="px-6 py-4 border-b flex items-center justify-between">
     <h2 class="text-lg font-bold" style="color:var(--primary)">Role List</h2>
     <div class="btn-group btn-sm">
-      <a href="/admin/v1/access/roles/create" class="btn btn-success btn-sm"><i class="fas fa-fw fa-plus"></i> Add Data</a>
+      <a href="/admin/v1/access/roles/create" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Add Data</a>
       <button type="submit" form="selection" formmethod="post"
               formaction="/admin/v1/access/roles/delete_selected"
               data-confirm="Confirm Delete" class="btn btn-danger btn-sm">
-        <i class="fas fa-fw fa-times"></i> Delete Selected
+        <i class="fas fa-times"></i> Delete Selected
       </button>
     </div>
   </div>
@@ -49,7 +50,7 @@ std::string qStatus = v(_d, "qStatus");
                 <option value="100"<%c++ if(pageSize==100) _s<<" selected"; %>>100</option>
               </select>
             </th>
-            <th width="18%"><input type="text" class="form-control" name="q_name" value="<%c++ hout(_s,qName); %>" placeholder="Name"></th>
+            <th width="18%"><input type="text" class="form-control" id="q_name" name="q_name" value="<%c++ hout(_s,qName); %>" placeholder="Name"></th>
             <th width="10%">
               <select name="q_status" class="form-control">
                 <option disabled<%c++ if(qStatus.empty()) _s<<" selected"; %>>Select</option>
@@ -57,11 +58,11 @@ std::string qStatus = v(_d, "qStatus");
                 <option value="Inactive"<%c++ if(qStatus=="Inactive") _s<<" selected"; %>>Inactive</option>
               </select>
             </th>
-            <th width="13%"></th>
+            <th width="13%"><input type="text" class="form-control" id="q_desc" name="q_desc" value="<%c++ hout(_s,qDesc); %>" placeholder="Description"></th>
             <th width="5%" class="text-center align-middle">
               <div class="btn-group">
-                <button type="submit" form="searchform" class="btn btn-sm btn-success"><i class="fas fa-fw fa-search"></i></button>
-                <a href="/admin/v1/access/roles" class="btn btn-sm btn-danger"><i class="fas fa-fw fa-times"></i></a>
+                <button type="submit" form="searchform" class="btn btn-sm btn-success"><i class="fas fa-search"></i></button>
+                <a href="/admin/v1/access/roles" class="btn btn-sm btn-danger"><i class="fas fa-times"></i></a>
               </div>
             </th>
           </tr>
@@ -111,11 +112,11 @@ if (rows.empty()) {
         _s << "    <div class=\"btn-group\">\n";
         _s << "      <button type=\"button\" class=\"btn btn-sm btn-primary dropdown-toggle\" data-toggle-dd>Action</button>\n";
         _s << "      <div class=\"dropdown-menu dropdown-menu-end\">\n";
-        _s << "        <a href=\"/admin/v1/access/roles/" << h(uid) << "/permission\" class=\"dropdown-item\"><i class=\"fas fa-key fa-fw\"></i> Permission</a>\n";
-        _s << "        <a href=\"/admin/v1/access/roles/" << h(uid) << "/edit\" class=\"dropdown-item\"><i class=\"fas fa-pen fa-fw\"></i> Edit</a>\n";
+        _s << "        <a href=\"/admin/v1/access/roles/" << h(uid) << "/permission\" class=\"dropdown-item\"><i class=\"fas fa-key\"></i> Permission</a>\n";
+        _s << "        <a href=\"/admin/v1/access/roles/" << h(uid) << "/edit\" class=\"dropdown-item\"><i class=\"fas fa-pen\"></i> Edit</a>\n";
         _s << "        <div class=\"dropdown-divider\"></div>\n";
-        _s << "        <form method=\"post\" action=\"/admin/v1/access/roles/" << h(uid) << "?_method=DELETE\" class=\"m-0\">\n";
-        _s << "          <button type=\"submit\" data-confirm=\"Confirm Delete\" class=\"dropdown-item danger\"><i class=\"fas fa-trash fa-fw\"></i> Delete</button>\n";
+        _s << "        <form method=\"post\" action=\"/admin/v1/access/roles/" << h(uid) << "/delete?_method=DELETE\" class=\"m-0\">\n";
+        _s << "          <button type=\"submit\" data-confirm=\"Confirm Delete\" class=\"dropdown-item danger\"><i class=\"fas fa-trash\"></i> Delete</button>\n";
         _s << "        </form>\n";
         _s << "      </div>\n";
         _s << "    </div>\n";

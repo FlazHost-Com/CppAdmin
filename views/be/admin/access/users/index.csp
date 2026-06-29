@@ -20,6 +20,7 @@ std::string qName   = v(_d, "qName");
 std::string qPhone  = v(_d, "qPhone");
 std::string qEmail  = v(_d, "qEmail");
 std::string qStatus = v(_d, "qStatus");
+std::string qRole   = v(_d, "qRole");
 %>
 <div class="flex items-center justify-between mb-6">
   <h1 class="text-2xl font-bold text-gray-800">User Management</h1>
@@ -64,7 +65,7 @@ std::string qStatus = v(_d, "qStatus");
               </select>
             </th>
             <th></th>
-            <th></th>
+            <th><input type="text" class="form-control" name="q_role" value="<%c++ hout(_s,qRole); %>" placeholder="Role"></th>
             <th class="text-center align-middle">
               <div class="btn-group">
                 <button type="submit" form="searchform" class="btn btn-sm btn-success"><i class="fas fa-fw fa-search"></i></button>
@@ -125,10 +126,7 @@ if (rows.empty()) {
         else
             _s << "<i class=\"fas fa-times-circle text-red-500 text-xl\" title=\"Inactive\"></i>";
         _s << "</td>\n";
-        _s << "  <td class=\"text-center\">";
-        if(!picture.empty())
-            _s << "<img src=\"" << h(picture) << "\" style=\"max-width:100px\" class=\"rounded\">";
-        _s << "</td>\n";
+        _s << "  <td class=\"text-center\"><img src=\"" << h(picture) << "\" style=\"max-width:100px\" class=\"rounded\" alt=\"picture\"></td>\n";
         // Roles as badges
         _s << "  <td>";
         if(!roles.empty()) {
@@ -170,7 +168,8 @@ auto pgLink = [&](int p) {
         + "&q_name="   + h(qName)
         + "&q_phone="  + h(qPhone)
         + "&q_email="  + h(qEmail)
-        + "&q_status=" + h(qStatus);
+        + "&q_status=" + h(qStatus)
+        + "&q_role="   + h(qRole);
 };
 if(curPage > 1)
     _s << "<li class=\"page-item\"><a class=\"page-link\" href=\"" << pgLink(curPage-1) << "\">Previous</a></li>\n";

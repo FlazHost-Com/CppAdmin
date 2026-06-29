@@ -1,6 +1,7 @@
 #include "CsrfFilter.h"
 #include <drogon/HttpResponse.h>
 #include <openssl/rand.h>
+#include <openssl/crypto.h>
 #include <sstream>
 #include <iomanip>
 #include <vector>
@@ -22,13 +23,21 @@ std::string CsrfFilter::generateToken(const drogon::HttpRequestPtr &req) {
 }
 
 std::string CsrfFilter::extractToken(const drogon::HttpRequestPtr &req) {
-    // 1. body field (form-urlencoded / multipart)
+    // 1. body field (form-urlencoded / multipart) — getParameter reads body for POST
     auto body = req->getParameter("_csrf");
     if (!body.empty()) return body;
-    // 2. query param (required for DELETE — body not parsed)
-    auto query = req->getParameter("_csrf");
-    if (!query.empty()) return query;
-    // 3. custom header
+    // 2. query param — getQuery reads URL query string only
+    auto query = req->getQuery();
+    // parse ?_csrf=VALUE from raw query string
+    std::string key = "_csrf=";
+    auto pos = query.find(key);
+    if (pos != std::string::npos) {
+        auto val = query.substr(pos + key.size());
+        auto end = val.find('&');
+        if (end != std::string::npos) val = val.substr(0, end);
+        if (!val.empty()) return val;
+    }
+    // 3. custom header (lowercase per standard)
     auto hdr = req->getHeader("x-csrf-token");
     if (!hdr.empty()) return hdr;
     return "";
@@ -58,7 +67,11 @@ void CsrfFilter::doFilter(const drogon::HttpRequestPtr &req,
 
     std::string submitted = extractToken(req);
 
-    if (sessionTok.empty() || submitted.empty() || sessionTok != submitted) {
+    // Timing-safe compare — prevent length-based timing leaks
+    bool mismatch = sessionTok.empty() || submitted.empty()
+        || sessionTok.size() != submitted.size()
+        || CRYPTO_memcmp(sessionTok.data(), submitted.data(), sessionTok.size()) != 0;
+    if (mismatch) {
         auto resp = drogon::HttpResponse::newHttpResponse();
         resp->setStatusCode(drogon::k403Forbidden);
         resp->setContentTypeCode(drogon::CT_TEXT_HTML);

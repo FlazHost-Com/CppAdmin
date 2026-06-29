@@ -1,6 +1,7 @@
 #include "AuthWebController.h"
 #include "../../../include/helpers/ViewHelper.h"
 #include "../../../include/helpers/FlashHelper.h"
+#include <json/json.h>
 
 using drogon::HttpRequestPtr;
 using drogon::HttpResponsePtr;
@@ -11,8 +12,8 @@ static drogon::Task<void> injectSettingAssets(drogon::HttpViewData &data,
                                                std::shared_ptr<ISettingService> svc) {
     try {
         auto s = co_await svc->findFirst();
-        data["settingLogo"]       = s.getValueOfLogo();
-        data["settingLoginImage"] = s.getValueOfLoginImage();
+        data["settingLogo"]       = std::string(s.getLogo()       ? *s.getLogo()       : "");
+        data["settingLoginImage"] = std::string(s.getLoginImage() ? *s.getLoginImage() : "");
         data["settingTheme"]      = s.getValueOfTheme();
     } catch (...) {
         data["settingLogo"]       = std::string("/be/default/vendor/fontawesome-free/svgs/solid/chart-line.svg");
@@ -35,11 +36,36 @@ drogon::Task<HttpResponsePtr>
 AuthWebController::postLogin(HttpRequestPtr req) {
     std::string email    = req->getParameter("email");
     std::string password = req->getParameter("password");
+    std::string loginErr;
+    try {
+        auto result = co_await auth_->login(email, password);
+        std::string userId = result.user.getValueOfId();
+        req->session()->insert("currentUser", userId);
 
-    auto result = co_await auth_->login(email, password);
+        // Store user role names in session for hasRole() in templates
+        try {
+            auto roles = co_await userSvc_->rolesOf(userId);
+            Json::Value arr(Json::arrayValue);
+            for (const auto &r : roles) arr.append(r.getValueOfName());
+            Json::FastWriter w;
+            req->session()->insert("userRolesJson", w.write(arr));
+        } catch (...) {
+            req->session()->insert("userRolesJson", std::string{"[]"});
+        }
 
-    req->session()->insert("currentUser", result.user.getValueOfId());
-    co_return HttpResponse::newRedirectionResponse("/admin/v1/dashboard");
+        co_return HttpResponse::newRedirectionResponse("/admin/v1/dashboard");
+    } catch (const std::exception &e) {
+        loginErr = e.what();
+    }
+    // co_await not permitted inside catch — render error response outside the catch block
+    drogon::HttpViewData data;
+    co_await injectSettingAssets(data, settingSvc_);
+    prepareViewData(data, req, data.get<std::string>("settingTheme"));
+    Json::Value arr(Json::arrayValue);
+    arr.append(loginErr);
+    Json::FastWriter w;
+    data["errorMessages"] = w.write(arr);
+    co_return renderView("views::be::admin::auth::login", data);
 }
 
 // ── showRegister ──────────────────────────────────────────────────────────────

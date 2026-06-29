@@ -32,7 +32,8 @@ CREATE TABLE roles (
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX roles__name ON roles(name);
+CREATE UNIQUE INDEX roles__name       ON roles(name);
+CREATE INDEX roles__guard_name ON roles(guard_name);
 CREATE TABLE permissions (
     id          VARCHAR(36)  NOT NULL PRIMARY KEY,
     name        VARCHAR(255) NOT NULL,
@@ -54,7 +55,6 @@ CREATE TABLE settings (
     description TEXT,
     icon        VARCHAR(255),
     logo        VARCHAR(255),
-    favicon     VARCHAR(255),
     login_image VARCHAR(255),
     phone       VARCHAR(255),
     address     VARCHAR(255),

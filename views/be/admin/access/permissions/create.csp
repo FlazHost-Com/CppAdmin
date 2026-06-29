@@ -29,7 +29,8 @@ auto& _s = create_tmp_stream;
     </div>
     <div class="mb-3">
       <label for="method" class="form-label fw-semibold">Method</label>
-      <select name="method" id="method" class="form-control">
+      <select id="method" name="method" class="form-control">
+        <option value="">-- Select Method --</option>
         <option value="GET">GET</option>
         <option value="POST">POST</option>
         <option value="PUT">PUT</option>

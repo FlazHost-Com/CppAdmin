@@ -13,6 +13,7 @@ std::string roleId   = v(_d, "roleId");
 std::string roleName = v(_d, "roleName");
 std::string qName    = v(_d, "qName");
 std::string qStatus  = v(_d, "qStatus");
+std::string qDesc    = v(_d, "qDesc");
 std::string curPageStr   = v(_d, "currentPage");
 std::string totalPageStr = v(_d, "totalPage");
 std::string pageSizeStr  = v(_d, "pageSize");
@@ -28,19 +29,18 @@ int pageSize  = pageSizeStr.empty()  ? 10 : std::stoi(pageSizeStr);
 
 <div class="tw-card p-0 overflow-hidden">
   <div class="px-6 py-4 border-b flex items-center justify-between">
-    <h2 class="text-lg font-bold" style="color:var(--primary)">Permission List — Role: <%c++ hout(_s, roleName); %></h2>
+    <h2 class="text-lg font-bold" style="color:var(--primary)">Permission List</h2>
     <div class="btn-group btn-sm">
       <button type="submit" form="selection"
               formmethod="post"
-              formaction="/admin/v1/access/roles/<%c++ hout(_s, roleId); %>/permission/assign-selected"
+              formaction="/admin/v1/access/roles/<%c++ hout(_s, roleId); %>/permission/assign_selected"
               data-confirm="Confirm Assign"
-              class="btn btn-info btn-sm"><i class="fas fa-fw fa-check"></i> Assign Selected</button>
+              class="btn btn-info btn-sm"><i class="fas fa-check"></i> Assign Selected</button>
       <button type="submit" form="selection"
               formmethod="post"
-              formaction="/admin/v1/access/roles/<%c++ hout(_s, roleId); %>/permission/unassign-selected"
+              formaction="/admin/v1/access/roles/<%c++ hout(_s, roleId); %>/permission/unassign_selected"
               data-confirm="Confirm Unassign"
-              class="btn btn-danger btn-sm"><i class="fas fa-fw fa-times"></i> Unassign Selected</button>
-      <a href="/admin/v1/access/roles" class="btn btn-secondary btn-sm"><i class="fas fa-fw fa-arrow-left"></i> Back</a>
+              class="btn btn-danger btn-sm"><i class="fas fa-times"></i> Unassign Selected</button>
     </div>
   </div>
 
@@ -66,11 +66,11 @@ int pageSize  = pageSizeStr.empty()  ? 10 : std::stoi(pageSizeStr);
                 <option value="Inactive"<%c++ if(qStatus=="Inactive") _s<<" selected"; %>>Inactive</option>
               </select>
             </th>
-            <th width="15%"></th>
+            <th width="15%"><input type="text" class="form-control" name="q_desc" value="<%c++ hout(_s,qDesc); %>" placeholder="Description"></th>
             <th width="5%" class="text-center align-middle">
               <div class="btn-group">
-                <button type="submit" form="searchform" class="btn btn-sm btn-success"><i class="fas fa-fw fa-search"></i></button>
-                <a href="/admin/v1/access/roles/<%c++ hout(_s, roleId); %>/permission" class="btn btn-sm btn-danger"><i class="fas fa-fw fa-times"></i></a>
+                <button type="submit" form="searchform" class="btn btn-sm btn-success"><i class="fas fa-search"></i></button>
+                <a href="/admin/v1/access/roles/<%c++ hout(_s, roleId); %>/permission" class="btn btn-sm btn-danger"><i class="fas fa-times"></i></a>
               </div>
             </th>
           </tr>
@@ -78,7 +78,7 @@ int pageSize  = pageSizeStr.empty()  ? 10 : std::stoi(pageSizeStr);
             <th width="5%"><input type="checkbox" id="checkall"/></th>
             <th width="5%">No</th>
             <th width="20%">Name</th>
-            <th width="10%">Assigned</th>
+            <th width="10%">Status</th>
             <th width="15%">Description</th>
             <th width="5%">Action</th>
           </tr>
@@ -121,9 +121,9 @@ if (rows.empty()) {
         _s << "    <div class=\"btn-group\">\n";
         _s << "      <button type=\"button\" class=\"btn btn-sm btn-primary dropdown-toggle\" data-toggle-dd>Action</button>\n";
         _s << "      <div class=\"dropdown-menu dropdown-menu-end\">\n";
-        _s << "        <a href=\"/admin/v1/access/roles/" << h(roleId) << "/permission/assign/" << h(pid) << "\" class=\"dropdown-item\"><i class=\"fas fa-check fa-fw\"></i> Assign</a>\n";
+        _s << "        <a href=\"/admin/v1/access/roles/" << h(roleId) << "/permission/" << h(pid) << "/assign\" class=\"dropdown-item\"><i class=\"fas fa-check\"></i> Assign</a>\n";
         _s << "        <div class=\"dropdown-divider\"></div>\n";
-        _s << "        <a href=\"/admin/v1/access/roles/" << h(roleId) << "/permission/unassign/" << h(pid) << "\" class=\"dropdown-item danger\"><i class=\"fas fa-times fa-fw\"></i> Unassign</a>\n";
+        _s << "        <a href=\"/admin/v1/access/roles/" << h(roleId) << "/permission/" << h(pid) << "/unassign\" class=\"dropdown-item danger\"><i class=\"fas fa-times\"></i> Unassign</a>\n";
         _s << "      </div>\n";
         _s << "    </div>\n";
         _s << "  </td>\n";

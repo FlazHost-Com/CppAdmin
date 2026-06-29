@@ -78,6 +78,15 @@ inline void prepareViewData(drogon::HttpViewData &data,
         data["currentUserEmail"] = std::string{};
         data["currentUserPic"]   = std::string{};
     }
+
+    // Inject user roles for hasRole() helper in templates
+    auto rolesOpt = req->session()->getOptional<std::string>("userRolesJson");
+    data["userRolesJson"] = rolesOpt ? *rolesOpt : std::string{"[]"};
+
+    // errorMessages[] — default empty (controllers set this on validation failure)
+    if (data.get<std::string>("errorMessages").empty()) {
+        data["errorMessages"] = std::string{};
+    }
 }
 
 // Helper: render view with text/html content-type

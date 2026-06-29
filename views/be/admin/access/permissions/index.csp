@@ -19,6 +19,7 @@ std::string qName   = v(_d, "qName");
 std::string qGuard  = v(_d, "qGuard");
 std::string qMethod = v(_d, "qMethod");
 std::string qStatus = v(_d, "qStatus");
+std::string qDesc   = v(_d, "qDesc");
 %>
 <div class="flex items-center justify-between mb-6">
   <h1 class="text-2xl font-bold text-gray-800">Permission Management</h1>
@@ -51,7 +52,7 @@ std::string qStatus = v(_d, "qStatus");
                 <option value="100"<%c++ if(pageSize==100) _s<<" selected"; %>>100</option>
               </select>
             </th>
-            <th width="18%"><input type="text" class="form-control" name="q_name" value="<%c++ hout(_s,qName); %>" placeholder="Name"></th>
+            <th width="18%"><input type="text" class="form-control" name="q_name" value="<%c++ hout(_s,qName); %>"></th>
             <th width="9%">
               <select name="q_guard" class="form-control">
                 <option disabled<%c++ if(qGuard.empty()) _s<<" selected"; %>>Select</option>
@@ -64,8 +65,8 @@ std::string qStatus = v(_d, "qStatus");
                 <option disabled<%c++ if(qMethod.empty()) _s<<" selected"; %>>Select</option>
                 <option value="GET"<%c++ if(qMethod=="GET") _s<<" selected"; %>>GET</option>
                 <option value="POST"<%c++ if(qMethod=="POST") _s<<" selected"; %>>POST</option>
-                <option value="PUT"<%c++ if(qMethod=="PUT") _s<<" selected"; %>>PUT</option>
                 <option value="PATCH"<%c++ if(qMethod=="PATCH") _s<<" selected"; %>>PATCH</option>
+                <option value="PUT"<%c++ if(qMethod=="PUT") _s<<" selected"; %>>PUT</option>
                 <option value="DELETE"<%c++ if(qMethod=="DELETE") _s<<" selected"; %>>DELETE</option>
               </select>
             </th>
@@ -76,7 +77,7 @@ std::string qStatus = v(_d, "qStatus");
                 <option value="Inactive"<%c++ if(qStatus=="Inactive") _s<<" selected"; %>>Inactive</option>
               </select>
             </th>
-            <th width="15%"></th>
+            <th width="15%"><input type="text" class="form-control" name="q_desc" value="<%c++ hout(_s,qDesc); %>"></th>
             <th width="5%" class="text-center align-middle">
               <div class="btn-group">
                 <button type="submit" form="searchform" class="btn btn-sm btn-success"><i class="fas fa-fw fa-search"></i></button>
@@ -90,8 +91,8 @@ std::string qStatus = v(_d, "qStatus");
             <th width="18%">Name</th>
             <th width="9%">Guard</th>
             <th width="15%">Method</th>
-            <th width="15%">Status</th>
-            <th width="10%">Description</th>
+            <th width="10%">Status</th>
+            <th width="15%">Description</th>
             <th width="5%">Action</th>
           </tr>
         </form>
@@ -157,11 +158,11 @@ if (rows.empty()) {
         <ul class="pagination">
 <%c++
 if(curPage > 1)
-    _s << "<li class=\"page-item\"><a class=\"page-link\" href=\"/admin/v1/access/permissions?q_page=" << (curPage-1) << "&q_name=" << h(qName) << "\">Previous</a></li>\n";
+    _s << "<li class=\"page-item\"><a class=\"page-link\" href=\"/admin/v1/access/permissions?q_page=" << (curPage-1) << "&q_name=" << h(qName) << "&q_guard=" << h(qGuard) << "&q_method=" << h(qMethod) << "&q_status=" << h(qStatus) << "&q_desc=" << h(qDesc) << "\">Previous</a></li>\n";
 for(int i=1; i<=totalPage; i++)
-    _s << "<li class=\"page-item" << (i==curPage?" active":"") << "\"><a class=\"page-link\" href=\"/admin/v1/access/permissions?q_page=" << i << "&q_name=" << h(qName) << "\">" << i << "</a></li>\n";
+    _s << "<li class=\"page-item" << (i==curPage?" active":"") << "\"><a class=\"page-link\" href=\"/admin/v1/access/permissions?q_page=" << i << "&q_name=" << h(qName) << "&q_guard=" << h(qGuard) << "&q_method=" << h(qMethod) << "&q_status=" << h(qStatus) << "&q_desc=" << h(qDesc) << "\">" << i << "</a></li>\n";
 if(curPage < totalPage && totalPage > 0)
-    _s << "<li class=\"page-item\"><a class=\"page-link\" href=\"/admin/v1/access/permissions?q_page=" << (curPage+1) << "&q_name=" << h(qName) << "\">Next</a></li>\n";
+    _s << "<li class=\"page-item\"><a class=\"page-link\" href=\"/admin/v1/access/permissions?q_page=" << (curPage+1) << "&q_name=" << h(qName) << "&q_guard=" << h(qGuard) << "&q_method=" << h(qMethod) << "&q_status=" << h(qStatus) << "&q_desc=" << h(qDesc) << "\">Next</a></li>\n";
 %>
         </ul>
       </nav>

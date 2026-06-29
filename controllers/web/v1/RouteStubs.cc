@@ -7,7 +7,4 @@
 // registerProfileRoutes()    → ProfileRoutes.cc (Phase 3)
 // registerMediaRoutes()      → MediaRoutes.cc  (Phase 4)
 
-// Home: simple redirect only — no dedicated module file needed.
-void registerHomeRoutes() {
-    // Handled inside DashboardRoutes.cc via "/" and "/admin" redirects.
-}
+// registerHomeRoutes() is implemented in HomeRoutes.cc

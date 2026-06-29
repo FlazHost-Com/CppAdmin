@@ -9,6 +9,38 @@ std::string flashSuccess = v(_d, "flashSuccess");
 std::string flashError   = v(_d, "flashError");
 std::string flashInfo    = v(_d, "flashInfo");
 %>
+<!-- Rich text editor untuk elemen .trumbowyg (polos) & .trumbowyg-editor (+ file manager) -->
+<script>
+(function () {
+    if (!(window.jQuery && jQuery.fn.trumbowyg)) return;
+    $(".trumbowyg").trumbowyg();
+    $(".trumbowyg-editor").trumbowyg({
+        btns: [
+            ['viewHTML'],
+            ['formatting'],
+            ['strong', 'em', 'del'],
+            ['superscript', 'subscript'],
+            ['link'],
+            ['filemanager'],
+            ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'],
+            ['unorderedList', 'orderedList'],
+            ['horizontalRule'],
+            ['removeformat'],
+            ['fullscreen']
+        ],
+        semantic: { div: 'div' },
+        removeformatPasted: true,
+        autogrow: true,
+        plugins: { filemanager: true }
+    });
+    $("form").on("submit", function () {
+        $(this).find(".trumbowyg, .trumbowyg-editor").each(function () {
+            if ($(this).data('trumbowyg')) $(this).val($(this).trumbowyg('html'));
+        });
+    });
+})();
+</script>
+
 <!-- Toggle sidebar (mobile) -->
 <script>
 (function () {
