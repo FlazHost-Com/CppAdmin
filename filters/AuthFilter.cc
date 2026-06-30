@@ -1,6 +1,9 @@
 #include "AuthFilter.h"
 #include "include/AppConfig.h"
 #include "include/helpers/JwtHelper.h"
+#include "include/helpers/JwtCookieHelper.h"
+#include "include/helpers/JwtBlacklist.h"
+#include <drogon/utils/coroutine.h>
 #include <drogon/HttpResponse.h>
 #include <json/json.h>
 
@@ -34,16 +37,33 @@ void AuthFilter::doFilter(const drogon::HttpRequestPtr &req,
         return;
     }
 
-    // ── Web path: expect session ───────────────────────────────────────────────
-    auto sess = req->session();
-    auto uid = sess->getOptional<std::string>("currentUser");
-    if (uid && !uid->empty()) {
-        req->attributes()->insert("currentUser", *uid);
-        fccb();
-        return;
+    // ── Web path: JWT in httpOnly cookie ──────────────────────────────────────
+    std::string token = JwtCookie::get(req);
+    if (!token.empty()) {
+        auto jwtResult = jwt_helper::verify(token, AppConfig::instance().jwtSecret);
+        if (jwtResult.valid && !jwtResult.jti.empty()) {
+            // Blacklist check is async — capture callbacks before async_run
+            auto fcbPtr  = std::make_shared<drogon::FilterCallback>(std::move(fcb));
+            auto fccbPtr = std::make_shared<drogon::FilterChainCallback>(std::move(fccb));
+            drogon::async_run([jwtResult, req, fcbPtr, fccbPtr]() -> drogon::Task<void> {
+                bool blacklisted = false;
+                try {
+                    blacklisted = co_await JwtBlacklist::isBlacklisted(jwtResult.jti);
+                } catch (...) {
+                    // DB error — fail open to avoid locking users out on transient errors
+                }
+                if (blacklisted) {
+                    (*fcbPtr)(drogon::HttpResponse::newRedirectionResponse("/auth/login"));
+                    co_return;
+                }
+                req->attributes()->insert("currentUser",   jwtResult.sub);
+                req->attributes()->insert("userRolesJson", jwtResult.roles);
+                (*fccbPtr)();
+            });
+            return;
+        }
     }
 
     // Not authenticated → redirect to login
-    auto resp = drogon::HttpResponse::newRedirectionResponse("/auth/login");
-    fcb(resp);
+    fcb(drogon::HttpResponse::newRedirectionResponse("/auth/login"));
 }

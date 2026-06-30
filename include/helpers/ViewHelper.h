@@ -79,9 +79,12 @@ inline void prepareViewData(drogon::HttpViewData &data,
         data["currentUserPic"]   = std::string{};
     }
 
-    // Inject user roles for hasRole() helper in templates
-    auto rolesOpt = req->session()->getOptional<std::string>("userRolesJson");
-    data["userRolesJson"] = rolesOpt ? *rolesOpt : std::string{"[]"};
+    // userRolesJson is injected by AuthFilter from the JWT "roles" claim
+    if (attrs->find("userRolesJson")) {
+        data["userRolesJson"] = attrs->get<std::string>("userRolesJson");
+    } else {
+        data["userRolesJson"] = std::string{"[]"};
+    }
 
     // errorMessages[] — default empty (controllers set this on validation failure)
     if (data.get<std::string>("errorMessages").empty()) {

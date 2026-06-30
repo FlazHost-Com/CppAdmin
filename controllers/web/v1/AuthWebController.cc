@@ -1,7 +1,13 @@
 #include "AuthWebController.h"
 #include "../../../include/helpers/ViewHelper.h"
 #include "../../../include/helpers/FlashHelper.h"
+#include "../../../include/helpers/JwtHelper.h"
+#include "../../../include/helpers/JwtCookieHelper.h"
+#include "../../../include/helpers/JwtBlacklist.h"
+#include "../../../include/helpers/UuidGen.h"
+#include "../../../include/AppConfig.h"
 #include <json/json.h>
+#include <chrono>
 
 using drogon::HttpRequestPtr;
 using drogon::HttpResponsePtr;
@@ -22,6 +28,26 @@ static drogon::Task<void> injectSettingAssets(drogon::HttpViewData &data,
     }
 }
 
+// Build and sign a web JWT containing userId, email, jti, and roles.
+// Returns the signed token string. Caller is responsible for setting the cookie.
+static std::string issueWebJwt(const std::string &userId,
+                                const std::string &email,
+                                const std::string &rolesJson) {
+    auto &cfg = AppConfig::instance();
+    long long now = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+
+    Json::Value payload;
+    payload["sub"]   = userId;
+    payload["email"] = email;
+    payload["jti"]   = newUuid();
+    payload["roles"] = rolesJson;
+    payload["iat"]   = (Json::Int64)now;
+    payload["exp"]   = (Json::Int64)(now + cfg.jwtExpireSeconds());
+
+    return jwt_helper::sign(payload, cfg.jwtSecret);
+}
+
 // ── showLogin ─────────────────────────────────────────────────────────────────
 drogon::Task<HttpResponsePtr>
 AuthWebController::showLogin(HttpRequestPtr req) {
@@ -40,20 +66,21 @@ AuthWebController::postLogin(HttpRequestPtr req) {
     try {
         auto result = co_await auth_->login(email, password);
         std::string userId = result.user.getValueOfId();
-        req->session()->insert("currentUser", userId);
 
-        // Store user role names in session for hasRole() in templates
+        // Fetch roles to embed in web JWT
+        Json::Value rolesArr(Json::arrayValue);
         try {
             auto roles = co_await userSvc_->rolesOf(userId);
-            Json::Value arr(Json::arrayValue);
-            for (const auto &r : roles) arr.append(r.getValueOfName());
-            Json::FastWriter w;
-            req->session()->insert("userRolesJson", w.write(arr));
-        } catch (...) {
-            req->session()->insert("userRolesJson", std::string{"[]"});
-        }
+            for (const auto &r : roles) rolesArr.append(r.getValueOfName());
+        } catch (...) {}
+        Json::FastWriter w;
+        std::string rolesJson = w.write(rolesArr);
+        if (!rolesJson.empty() && rolesJson.back() == '\n') rolesJson.pop_back();
 
-        co_return HttpResponse::newRedirectionResponse("/admin/v1/dashboard");
+        std::string token = issueWebJwt(userId, result.user.getValueOfEmail(), rolesJson);
+        auto resp = HttpResponse::newRedirectionResponse("/admin/v1/dashboard");
+        JwtCookie::set(resp, token, AppConfig::instance().jwtExpireSeconds());
+        co_return resp;
     } catch (const std::exception &e) {
         loginErr = e.what();
     }
@@ -86,16 +113,32 @@ AuthWebController::postRegister(HttpRequestPtr req) {
     input.password = req->getParameter("password");
     input.phone    = req->getParameter("phone");
 
-    auto user = co_await auth_->registerUser(std::move(input));
-    req->session()->insert("currentUser", user.getValueOfId());
-    co_return HttpResponse::newRedirectionResponse("/admin/v1/dashboard");
+    auto user  = co_await auth_->registerUser(std::move(input));
+    // New users have no roles yet; JWT carries an empty array
+    std::string token = issueWebJwt(user.getValueOfId(), user.getValueOfEmail(), "[]");
+    auto resp = HttpResponse::newRedirectionResponse("/admin/v1/dashboard");
+    JwtCookie::set(resp, token, AppConfig::instance().jwtExpireSeconds());
+    co_return resp;
 }
 
 // ── postLogout ────────────────────────────────────────────────────────────────
 drogon::Task<HttpResponsePtr>
 AuthWebController::postLogout(HttpRequestPtr req) {
+    // Blacklist the current JWT so it cannot be reused before natural expiry
+    std::string token = JwtCookie::get(req);
+    if (!token.empty()) {
+        auto jwtResult = jwt_helper::verify(token, AppConfig::instance().jwtSecret);
+        if (jwtResult.valid && !jwtResult.jti.empty()) {
+            try {
+                co_await JwtBlacklist::blacklist(jwtResult.jti, jwtResult.exp);
+            } catch (...) {}
+        }
+    }
+    // Clear session (flash + CSRF) and cookie
     req->session()->clear();
-    co_return HttpResponse::newRedirectionResponse("/auth/login");
+    auto resp = HttpResponse::newRedirectionResponse("/auth/login");
+    JwtCookie::clear(resp);
+    co_return resp;
 }
 
 // ── showResetReq ──────────────────────────────────────────────────────────────

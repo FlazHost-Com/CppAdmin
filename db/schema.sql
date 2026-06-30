@@ -81,6 +81,12 @@ CREATE TABLE roles_permissions (
     FOREIGN KEY (role_id)       REFERENCES roles(id)       ON DELETE CASCADE,
     FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS jwt_blacklist (
+    jti        VARCHAR(36)  NOT NULL PRIMARY KEY,
+    expires_at TIMESTAMP    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_jwt_blacklist_exp ON jwt_blacklist(expires_at);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
-  ('20240101000001');
+  ('20240101000001'),
+  ('20260630000002');

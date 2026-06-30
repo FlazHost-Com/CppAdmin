@@ -98,6 +98,8 @@ struct VerifyResult {
     bool valid{false};
     std::string sub;
     std::string email;
+    std::string jti;    // JWT ID — used for web cookie blacklist on logout
+    std::string roles;  // roles JSON array string embedded in web JWT
     long long exp{0};
     long long iat{0};
 };
@@ -137,6 +139,8 @@ inline VerifyResult verify(const std::string &token, const std::string &secret) 
 
     r.sub   = payload.get("sub",   "").asString();
     r.email = payload.get("email", "").asString();
+    r.jti   = payload.get("jti",   "").asString();
+    r.roles = payload.get("roles", "[]").asString();
     r.iat   = payload.get("iat",   Json::Value(0)).asInt64();
     r.valid = !r.sub.empty();
     return r;
