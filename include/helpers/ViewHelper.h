@@ -33,11 +33,15 @@ inline void injectTheme(drogon::HttpViewData &data,
     data["themeName"]      = it->first;
 }
 
-// Inject CSRF token into view data
+// Inject CSRF token into view data.
+// CsrfFilter::generateToken caches the computed token in request attribute "csrfToken"
+// during the GET phase; this reads that cached value (empty string if filter didn't run).
 inline void injectCsrf(drogon::HttpViewData &data,
                        const drogon::HttpRequestPtr &req) {
-    auto opt = req->session()->getOptional<std::string>("_csrf");
-    data["csrfToken"] = opt ? *opt : std::string{};
+    auto attrs = req->getAttributes();
+    std::string tok;
+    if (attrs->find("csrfToken")) tok = attrs->get<std::string>("csrfToken");
+    data["csrfToken"] = tok;
 }
 
 // Inject flash messages (consumed from session — one-time read)

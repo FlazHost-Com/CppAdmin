@@ -134,7 +134,7 @@ AuthWebController::postLogout(HttpRequestPtr req) {
             } catch (...) {}
         }
     }
-    // Clear session (flash + CSRF) and cookie
+    // Clear session (flash messages) and cookie
     req->session()->clear();
     auto resp = HttpResponse::newRedirectionResponse("/auth/login");
     JwtCookie::clear(resp);
