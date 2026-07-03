@@ -31,8 +31,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            cmake g++ pkg-config \
-            libdrogon-dev \
+            cmake make g++ pkg-config \
+            drogon libdrogon-dev \
             libjsoncpp-dev uuid-dev zlib1g-dev \
             libyaml-cpp-dev libbrotli-dev libpq-dev \
             libssl-dev libcurl4-openssl-dev \
