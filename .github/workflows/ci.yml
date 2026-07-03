@@ -33,13 +33,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             cmake g++ pkg-config \
             libdrogon-dev \
+            libjsoncpp-dev uuid-dev zlib1g-dev \
+            libyaml-cpp-dev libbrotli-dev libpq-dev \
             libssl-dev libcurl4-openssl-dev \
             libjwt-dev \
             libhiredis-dev \
             libsqlite3-dev \
             default-libmysqlclient-dev \
-            python3 \
-            dbmate || true
+            python3
 
       - name: Configure cmake (Full mode)
         run: |
