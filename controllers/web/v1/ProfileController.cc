@@ -69,6 +69,17 @@ ProfileController::update(drogon::HttpRequestPtr req) {
     input.timezone = form::get(req, "timezone");
     input.picture  = co_await upload::imageIfAny(req, "picture", "avatars/" + uid + "-");
 
+    // blocked/blockedReason WAJIB dipertahankan apa adanya. UserService::update
+    // menulis u.setBlocked(input.blocked) tanpa syarat, sedangkan form profil tidak
+    // pernah mengirim field itu — nilai default `false` akan MEMBUKA BLOKIR.
+    // Status blocked hanya diperiksa saat login (AuthService), bukan per-permintaan,
+    // jadi user yang diblokir setelah login masih memegang JWT yang sah dan bisa
+    // membuka blokir dirinya sendiri hanya dengan menyimpan profil. Ini hak admin,
+    // bukan hak user atas dirinya sendiri.
+    auto self = co_await userSvc_->findById(uid);
+    input.blocked       = self.getValueOfBlocked();
+    input.blockedReason = self.getBlockedReason() ? *self.getBlockedReason() : std::string{};
+
     co_await userSvc_->update(uid, input, uid);
     Flash::setSuccess(req, "Update Profile Success.");
     co_return drogon::HttpResponse::newRedirectionResponse("/admin/v1/profile");
